@@ -42,23 +42,27 @@ void Camera::update() {
 	right = glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f)));
 	up = glm::normalize(glm::cross(right, front));
 
+	float s = speed;
+	if (glfwGetKey(app->window, GLFW_KEY_LEFT_SHIFT)) {
+		s *= 10.0f;
+	}
 	if (glfwGetKey(app->window, GLFW_KEY_W)) {
-		position += speed * front;
+		position += s * front;
 	}
 	if (glfwGetKey(app->window, GLFW_KEY_S)) {
-		position -= speed * front;
+		position -= s * front;
 	}
 	if (glfwGetKey(app->window, GLFW_KEY_D)) {
-		position += speed * right;
+		position += s * right;
 	}
 	if (glfwGetKey(app->window, GLFW_KEY_A)) {
-		position -= speed * right;
+		position -= s * right;
 	}
 	if (glfwGetKey(app->window, GLFW_KEY_R)) {
-		position += speed * up;
+		position += s * up;
 	}
 	if (glfwGetKey(app->window, GLFW_KEY_F)) {
-		position -= speed * up;
+		position -= s * up;
 	}
 
 	view = glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f));

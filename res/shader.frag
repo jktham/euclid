@@ -6,10 +6,25 @@ in vec2 uvPos;
 uniform mat4 view;
 uniform mat4 projection;
 
-layout (std140) uniform Spheres
+struct Sphere {
+    vec4 position; // x, y, z, radius
+    vec4 color; // r, g, b, shininess
+};
+
+layout (binding = 0, std140) uniform Spheres
 {
-    vec3 position;
-    float radius;
+    Sphere spheres[4];
+};
+
+struct Plane {
+    vec4 normal; // x, y, z, 0
+    vec4 point; // x, y, z, 0
+    vec4 color; // r, g, b, shininess
+};
+
+layout (binding = 1, std140) uniform Planes
+{
+    Plane planes[1];
 };
 
 struct Ray {
@@ -24,12 +39,7 @@ struct RayHit {
     vec4 color;
 };
 
-struct Sphere {
-    vec4 position;
-    vec4 color;
-};
-
-float sphereIntersect(Ray ray, Sphere sphere) {
+float intersectSphere(Ray ray, Sphere sphere) {
     float a = dot(ray.direction, ray.direction);
     vec3 offset = ray.origin - sphere.position.xyz;
     float b = 2.0 * dot(ray.direction, offset);
@@ -40,16 +50,39 @@ float sphereIntersect(Ray ray, Sphere sphere) {
     return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);
 }
 
-RayHit trace(Ray ray) {
-    RayHit hit = RayHit(vec3(0.0, 0.0, 0.0), 99999.0, vec3(0.0, 0.0, 0.0), vec4(0.0, 0.0, 0.0, 0.0));
-    Sphere sphere = Sphere(vec4(vec3(view * vec4(0.0, 0.0, -2.0, 1.0)), 1.0), vec4(1.0, 0.0, 0.0, 1.0));
+float intersectPlane(Ray ray, Plane plane) {
+    float a = dot(ray.direction, plane.normal.xyz);
+    if (abs(a) < 0.001) {
+        return -1.0;
+    }
+    return (dot(plane.normal.xyz, plane.point.xyz) - dot(plane.normal.xyz, ray.origin+ray.direction)) / dot(plane.normal.xyz, normalize(ray.direction));
+}
 
-    float result = sphereIntersect(ray, sphere);
-    if (result < hit.distance && result > 0.001) {
-        hit.distance = result;
-        vec3 hitPos = ray.origin + ray.direction * result;
-        hit.normal = normalize(hitPos - sphere.position.xyz);
-        hit.color = sphere.color;
+RayHit trace(Ray ray) {
+    RayHit hit;
+    hit.distance = 10001.0;
+    for (int i=0;i<spheres.length();i++) {
+        Sphere sphere = spheres[i];
+        sphere.position.xyz = vec3(view * vec4(sphere.position.xyz, 1.0));
+        float t = intersectSphere(ray, sphere);
+        if (t < hit.distance && t > 0.001) {
+            hit.distance = t;
+            hit.position = ray.origin + ray.direction * hit.distance;
+            hit.normal = normalize(hit.position - sphere.position.xyz);
+            hit.color = sphere.color;
+        }
+    }
+    for (int i=0;i<planes.length();i++) {
+        Plane plane = planes[i];
+        plane.point.xyz = vec3(view * vec4(plane.point.xyz, 1.0));
+        plane.normal.xyz = vec3(transpose(inverse(view)) * vec4(plane.normal.xyz, 1.0));
+        float t = intersectPlane(ray, plane);
+        if (t < hit.distance && t > 0.001) {
+            hit.distance = t;
+            hit.position = ray.origin + ray.direction * hit.distance;
+            hit.normal = plane.normal.xyz;
+            hit.color = plane.color;
+        }
     }
     return hit;
 }
@@ -62,8 +95,8 @@ void main() {
     RayHit hit = trace(ray);
 
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-    if (hit.distance < 9999.0) {
-        color = hit.color;
+    if (hit.distance < 10000.0) {
+        color = vec4(hit.color.rgb, 1.0);
     }
     
     FragColor = color;

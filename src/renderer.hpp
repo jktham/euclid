@@ -10,6 +10,8 @@ public:
 	unsigned int baseShader;
 	unsigned int vao;
 	unsigned int vbo;
+	unsigned int uboSpheres;
+	unsigned int uboPlanes;
 
 	App* app;
 	Camera* camera;

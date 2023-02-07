@@ -37,6 +37,33 @@ void Renderer::init(App* app) {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	float spheres[] = {
+		0.0f, 0.0f, -3.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+		1.0f, 4.0f, -10.0f, 2.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+		-4.0f, -2.0f, -12.0f, 3.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+		5.0f, -2.0f, -8.0f, 4.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+	};
+
+	glGenBuffers(1, &uboSpheres);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboSpheres);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(spheres), &spheres, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glUniformBlockBinding(baseShader, glGetUniformBlockIndex(baseShader, "Spheres"), 0);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboSpheres);
+
+	float planes[] = {
+		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -10.0f, 0.0f, 0.0f, 0.2f, 0.2f, 0.2f, 0.0f,
+	};
+
+	glGenBuffers(1, &uboPlanes);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboPlanes);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(planes), &planes, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glUniformBlockBinding(baseShader, glGetUniformBlockIndex(baseShader, "Planes"), 1);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboPlanes);
+	
 	glBindVertexArray(0);
 }
 
