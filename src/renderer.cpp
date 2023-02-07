@@ -13,18 +13,17 @@
 
 void Renderer::init(App* app) {
 	this->app = app;
+	camera = &app->camera;
 
 	baseShader = compileShader("shader");
 
-	projection = glm::ortho(0.0f, (float)app->width, (float)app->height, 0.0f);
-
 	float vertices[] = {
-		 1920.0f,  1080.0f,
-		 1920.0f, -1080.0f,
-		-1920.0f,  1080.0f,
-		 1920.0f, -1080.0f,
-		-1920.0f, -1080.0f,
-		-1920.0f,  1080.0f,
+		 1.0f,  1.0f,
+		 1.0f, -1.0f,
+		-1.0f,  1.0f,
+		 1.0f, -1.0f,
+		-1.0f, -1.0f,
+		-1.0f,  1.0f,
 	};
 
 	glGenVertexArrays(1, &vao);
@@ -45,7 +44,8 @@ void Renderer::draw() {
 	glUseProgram(baseShader);
 	glBindVertexArray(vao);
 
-	glUniformMatrix4fv(glGetUniformLocation(baseShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(glGetUniformLocation(baseShader, "view"), 1, GL_FALSE, glm::value_ptr(camera->view));
+	glUniformMatrix4fv(glGetUniformLocation(baseShader, "projection"), 1, GL_FALSE, glm::value_ptr(camera->projection));
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -55,7 +55,7 @@ void Renderer::draw() {
 
 unsigned int Renderer::compileShader(std::string name) {
 	const char *vertSource;
-	std::ifstream vertFile("res/" + name + ".vs");
+	std::ifstream vertFile("res/" + name + ".vert");
 	std::string vertString((std::istreambuf_iterator<char>(vertFile)), std::istreambuf_iterator<char>());
 	vertSource = vertString.c_str();
 	unsigned int vertShader;
@@ -64,7 +64,7 @@ unsigned int Renderer::compileShader(std::string name) {
 	glCompileShader(vertShader);
 
 	const char *fragSource;
-	std::ifstream fragFile("res/" + name + ".fs");
+	std::ifstream fragFile("res/" + name + ".frag");
 	std::string fragString((std::istreambuf_iterator<char>(fragFile)), std::istreambuf_iterator<char>());
 	fragSource = fragString.c_str();
 	unsigned int fragShader;

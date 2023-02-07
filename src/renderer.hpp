@@ -1,18 +1,18 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include <string>
 
 class App;
+class Camera;
 
 class Renderer {
 public:
 	unsigned int baseShader;
 	unsigned int vao;
 	unsigned int vbo;
-	glm::mat4 projection;
 
 	App* app;
+	Camera* camera;
 
 	void init(App* app);
 	void draw();
