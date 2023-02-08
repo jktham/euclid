@@ -55,7 +55,6 @@ void Renderer::draw() {
 	glBindVertexArray(vao);
 
 	glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, glm::value_ptr(app.camera.view));
-	glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, glm::value_ptr(app.camera.projection));
 	glUniform1f(glGetUniformLocation(shader, "fov"), app.camera.fov);
 	glUniform2i(glGetUniformLocation(shader, "windowSize"), app.width, app.height);
 	glUniform1i(glGetUniformLocation(shader, "sphereCount"), spheres.size() / 8);
