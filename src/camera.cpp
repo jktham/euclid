@@ -40,6 +40,9 @@ void Camera::update() {
 	if (glfwGetKey(app.window, GLFW_KEY_LEFT_SHIFT)) {
 		d *= 10.0f;
 	}
+	if (glfwGetKey(app.window, GLFW_KEY_LEFT_CONTROL)) {
+		d *= 0.1f;
+	}
 	if (glfwGetKey(app.window, GLFW_KEY_W)) {
 		position += d * front;
 	}

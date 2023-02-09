@@ -37,6 +37,21 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 			app.renderer.bounces = 1;
 		}
 	}
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
+		app.renderer.loadScene(0);
+	}
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+		app.renderer.loadScene(1);
+	}
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+		app.renderer.loadScene(2);
+	}
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
+		app.renderer.loadScene(3);
+	}
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+		app.paused = !app.paused;
+	}
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
@@ -73,7 +88,7 @@ void App::init() {
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	glfwSwapInterval(1);
+	glfwSwapInterval(0);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, width, height);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -90,8 +105,10 @@ void App::loop() {
 		deltaTime = glfwGetTime() - time;
 		time = glfwGetTime();
 		
-		std::cout << std::fixed << std::setprecision(6) << time << ", " << deltaTime << ", " << 1.0f / deltaTime << std::endl;
-		// std::cout << glm::to_string(camera.position) << std::endl;
+		std::cout << std::fixed << std::setprecision(4);
+		std::cout << time << ", " << deltaTime << ", " << 1.0f / deltaTime;
+		std::cout << ", " << glm::to_string(camera.position);
+		std::cout << std::endl;
 
 		camera.update();
 		renderer.update();

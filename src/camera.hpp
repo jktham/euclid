@@ -2,8 +2,6 @@
 
 #include <glm/glm.hpp>
 
-class App;
-
 class Camera {
 public:
 	float fov = 90.0f;
