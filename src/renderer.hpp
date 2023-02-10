@@ -40,11 +40,13 @@ struct Quad {
 
 struct BobbingSphere {
 	Sphere sphere = Sphere(glm::vec4(0.0f), glm::vec4(0.0f));
+	glm::vec4 position = glm::vec4(0.0f);
 	glm::vec4 direction = glm::vec4(0.0f);
 	glm::vec4 parameters = glm::vec4(0.0f);
 	
-	BobbingSphere(Sphere sphere, glm::vec4 direction, glm::vec4 parameters) {
+	BobbingSphere(Sphere sphere, glm::vec4 position, glm::vec4 direction, glm::vec4 parameters) {
 		this->sphere = sphere;
+		this->position = position;
 		this->direction = direction;
 		this->parameters = parameters;
 	}
@@ -67,6 +69,7 @@ public:
 	std::vector<BobbingSphere> bobbingSpheres;
 
 	int bounces = 20;
+	float time;
 
 	void init();
 	void update();
