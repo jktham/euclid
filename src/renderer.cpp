@@ -34,11 +34,12 @@ void Renderer::update() {
 		time += app.deltaTime;
 	}
 	for (int i=0;i<quads.size();i++) {
-		quads[i].plane.normal = glm::vec4(glm::normalize(glm::cross(glm::vec3(quads[i].edge1), glm::vec3(quads[i].edge2))), glm::dot(glm::vec3(quads[i].position), glm::vec3(quads[i].plane.normal)));
+		quads[i].normal = glm::vec4(glm::normalize(glm::cross(glm::vec3(quads[i].edge1), glm::vec3(quads[i].edge2))), 0.0f);
+		quads[i].normal.w = glm::dot(glm::vec3(quads[i].position), glm::vec3(quads[i].normal));
 	}
 	for (int i=0;i<bobbingSpheres.size();i++) {
 		float factor = bobbingSpheres[i].parameters.x + 0.5f*(bobbingSpheres[i].parameters.y - bobbingSpheres[i].parameters.x)*(1.0f + sin(bobbingSpheres[i].parameters.z*time + bobbingSpheres[i].parameters.w));
-		bobbingSpheres[i].sphere.position = bobbingSpheres[i].position + glm::vec4(glm::vec3(bobbingSpheres[i].direction * factor), 0.0f);
+		bobbingSpheres[i].position = bobbingSpheres[i].origin + glm::vec4(glm::vec3(bobbingSpheres[i].direction * factor), 0.0f);
 	}
 	updateBuffers();
 }
@@ -76,61 +77,36 @@ void Renderer::loadScene(int id) {
 	bobbingSpheres.clear();
 
 	if (id == 1) {
-		planes.push_back(Plane(glm::vec4(0.0f, 1.0f, 0.0f, -30.0f), glm::vec4(0.5f, 0.5f, 0.5f, 0.8f)));
-		quads.push_back(Quad(Plane(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.9f)), glm::vec4(0.0f, -30.0f, 0.0f, 0.0f), glm::vec4(0.0f, 40.0f, 0.0f, 0.0f), glm::vec4(0.0f, 20.0f, -50.0f, 0.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.1f, 0.1f, 0.1f, 1.0f)), glm::vec4( 10.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  0.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.9f, 1.0f)), glm::vec4( 20.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  1.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.9f, 1.0f)), glm::vec4( 30.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  2.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.9f, 0.3f, 1.0f)), glm::vec4( 40.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  3.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.1f, 0.1f, 0.1f, 0.6f)), glm::vec4( 10.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  4.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.9f, 0.6f)), glm::vec4( 20.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  5.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.9f, 0.6f)), glm::vec4( 30.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  6.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.9f, 0.3f, 0.6f)), glm::vec4( 40.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  7.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.1f, 0.1f, 0.1f, 0.3f)), glm::vec4( 10.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  8.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.9f, 0.3f)), glm::vec4( 20.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  9.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.9f, 0.3f)), glm::vec4( 30.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 10.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.9f, 0.3f, 0.3f)), glm::vec4( 40.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 11.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.1f, 0.1f, 0.1f, 0.0f)), glm::vec4( 10.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 12.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.9f, 0.0f)), glm::vec4( 20.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 13.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.9f, 0.0f)), glm::vec4( 30.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 14.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.9f, 0.3f, 0.0f)), glm::vec4( 40.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 15.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), glm::vec4(-10.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  0.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.3f, 1.0f)), glm::vec4(-20.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  1.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.3f, 1.0f)), glm::vec4(-30.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  2.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.3f, 0.9f, 1.0f)), glm::vec4(-40.0f, 0.0f, -10.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  3.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f)), glm::vec4(-10.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  4.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.3f, 0.6f)), glm::vec4(-20.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  5.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.3f, 0.6f)), glm::vec4(-30.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  6.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.3f, 0.9f, 0.6f)), glm::vec4(-40.0f, 0.0f, -20.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  7.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.3f)), glm::vec4(-10.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  8.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.3f, 0.3f)), glm::vec4(-20.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f,  9.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.3f, 0.3f)), glm::vec4(-30.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 10.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.3f, 0.9f, 0.3f)), glm::vec4(-40.0f, 0.0f, -30.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 11.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.0f)), glm::vec4(-10.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 12.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.9f, 0.3f, 0.3f, 0.0f)), glm::vec4(-20.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 13.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.9f, 0.3f, 0.0f)), glm::vec4(-30.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 14.0f*2.0f*3.1415f/16.0f)));
-		bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.3f, 0.3f, 0.9f, 0.0f)), glm::vec4(-40.0f, 0.0f, -40.0f, 3.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-6.0f, 6.0f, 1.0f, 15.0f*2.0f*3.1415f/16.0f)));
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
+		quads.push_back(Quad(glm::vec3(0.0f, -30.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 20.0f, -50.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
+		glm::vec3 colors1[] = {glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.9f), glm::vec3(0.9f, 0.9f, 0.3f)};
+		glm::vec3 colors2[] = {glm::vec3(0.9f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.3f), glm::vec3(0.3f, 0.3f, 0.9f)};
+		int n = 16;
+		for (int i=0;i<n;i++) {
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*3.1415f/(float)n, colors1[i%4], i/4 * 0.333f));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*3.1415f/(float)n, colors2[i%4], i/4 * 0.333f));
+		}
 	} else if (id == 2) {
-		planes.push_back(Plane(glm::vec4(0.0f, 1.0f, 0.0f, -10.0f), glm::vec4(0.5f, 0.5f, 0.5f, 0.8f)));
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
 		int n = 30;
 		for (int i=0;i<n;i++) {
-			bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 1.0f)), glm::vec4(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f), rnd(2.0f, 6.0f)), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*3.1415f))));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f)), rnd(2.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*3.1415f), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
 		}
 	} else if (id == 3) {
-		planes.push_back(Plane(glm::vec4(0.0f, 1.0f, 0.0f, -30.0f), glm::vec4(0.5f, 0.5f, 0.5f, 0.8f)));
-		spheres.push_back(Sphere(glm::vec4(0.0f, 0.0f, -30.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
+		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, -30.0f), 20.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 		int n = 30;
 		for (int i=0;i<30;i++) {
 			float phi = i * 2.0f*3.1415f/(float)n;
-			bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 1.0f)), glm::vec4(cos(phi)*n, 0.0f, -30.0f + sin(phi)*n, 1.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(-10.0f, 10.0f, 1.0f, phi*2.0f)));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(cos(phi)*n, 0.0f, -30.0f + sin(phi)*n), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, 10.0f, 1.0f, phi*3.0f, glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
 		}
 	} else if (id == 4) {
-		quads.push_back(Quad(Plane(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.9f)), glm::vec4(-35.0f, -20.0f, 0.0f, 0.0f), glm::vec4(0.0f, 40.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, -40.0f, 0.0f)));
-		quads.push_back(Quad(Plane(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.9f)), glm::vec4( 35.0f, -20.0f, 0.0f, 0.0f), glm::vec4(0.0f, 40.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, -40.0f, 0.0f)));
+		quads.push_back(Quad(glm::vec3(-35.0f, -20.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
+		quads.push_back(Quad(glm::vec3( 35.0f, -20.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
 		int n = 36;
 		for (int i=0;i<n;i++) {
 			float phi = i * 2.0f*3.1415f/(float)n;
-			bobbingSpheres.push_back(BobbingSphere(Sphere(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), glm::vec4(((n-1)/2.0f-i)*2.0f, 0.0f, -20.0f, 1.0f), glm::vec4(0.0f, cos(phi), sin(phi), 0.0f), glm::vec4(-10.0f, 10.0f, 1.0f, 24.0f*phi)));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(((n-1)/2.0f-i)*2.0f, 0.0f, -20.0f), 1.0f, glm::vec3(0.0f, cos(phi), sin(phi)), -10.0f, 10.0f, 1.0f, 24.0f*phi, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 		}
 	}
 

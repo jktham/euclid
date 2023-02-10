@@ -1,27 +1,29 @@
 #version 460 core
 
 struct Plane {
-	vec4 normal; // x, y, z, offset
-	vec4 color; // r, g, b, shininess
+	vec4 normal;
+	vec4 color;
 };
 
 struct Sphere {
-	vec4 position; // x, y, z, radius
-	vec4 color; // r, g, b, shininess
+	vec4 position;
+	vec4 color;
 };
 
 struct Quad {
-	Plane plane;
-	vec4 position; // x, y, z, 0
-	vec4 edge1; // x1, y1, z1, 0
-	vec4 edge2; // x2, y2, z2, 0
+	vec4 position;
+	vec4 edge1;
+	vec4 edge2;
+	vec4 color;
+	vec4 normal;
 };
 
 struct BobbingSphere {
-	Sphere sphere;
-	vec4 position; // x, y, z, radius
-	vec4 direction; // x, y, z, 0
-	vec4 parameters; // min, max, speed, offset
+	vec4 origin;
+	vec4 direction;
+	vec4 parameters;
+	vec4 color;
+	vec4 position;
 };
 
 struct Ray {
@@ -72,23 +74,23 @@ layout (binding = 3, std140) uniform BobbingSpheres {
 	BobbingSphere bobbingSpheres[MAX_OBJECTS];
 };
 
-float intersectPlane(Ray ray, Plane plane) {
-	float a = dot(ray.direction, plane.normal.xyz);
+float intersectPlane(Ray ray, vec4 planeNormal) {
+	float a = dot(ray.direction, planeNormal.xyz);
 	if (abs(a) < 0.001) {
 		return -1.0;
 	}
-	vec3 n = plane.normal.xyz;
-	vec3 p0 = plane.normal.xyz * plane.normal.w;
+	vec3 n = planeNormal.xyz;
+	vec3 p0 = planeNormal.xyz * planeNormal.w;
 	vec3 l = ray.direction;
 	vec3 l0 = ray.origin;
 	return dot((p0-l0), n) / dot(l, n);
 }
 
-float intersectSphere(Ray ray, Sphere sphere) {
+float intersectSphere(Ray ray, vec4 spherePosition) {
 	float a = dot(ray.direction, ray.direction);
-	vec3 offset = ray.origin - sphere.position.xyz;
+	vec3 offset = ray.origin - spherePosition.xyz;
 	float b = 2.0 * dot(ray.direction, offset);
-	float c = dot(offset, offset) - (sphere.position.w*sphere.position.w);
+	float c = dot(offset, offset) - (spherePosition.w*spherePosition.w);
 	if (b*b - 4.0*a*c < 0.0) {
 		return -1.0;
 	}
@@ -99,7 +101,7 @@ RayHit trace(Ray ray) {
 	RayHit hit;
 	hit.distance = far + 1.0;
 	for (int i=0;i<planeCount;i++) {
-		float t = intersectPlane(ray, planes[i]);
+		float t = intersectPlane(ray, planes[i].normal);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
 			hit.position = ray.origin + ray.direction * hit.distance;
@@ -108,7 +110,7 @@ RayHit trace(Ray ray) {
 		}
 	}
 	for (int i=0;i<sphereCount;i++) {
-		float t = intersectSphere(ray, spheres[i]);
+		float t = intersectSphere(ray, spheres[i].position);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
 			hit.position = ray.origin + ray.direction * hit.distance;
@@ -117,13 +119,13 @@ RayHit trace(Ray ray) {
 		}
 	}
 	for (int i=0;i<quadCount;i++) {
-		float t = intersectPlane(ray, quads[i].plane);
+		float t = intersectPlane(ray, quads[i].normal);
 		if (t < hit.distance && t > near) {
 			vec3 pos = ray.origin + ray.direction * t;
 			vec3 offset = pos - quads[i].position.xyz; 
 			vec3 e1 = quads[i].edge1.xyz;
 			vec3 e2 = quads[i].edge2.xyz;
-			vec3 n = quads[i].plane.normal.xyz;
+			vec3 n = quads[i].normal.xyz;
 			float v1 = dot(cross(e1, offset), n);
 			float v2 = dot(cross(offset, e2), n);
 			float v3 = dot(cross(e1, e2 - offset), n);
@@ -131,18 +133,18 @@ RayHit trace(Ray ray) {
 			if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0) {
 				hit.distance = t;
 				hit.position = ray.origin + ray.direction * hit.distance;
-				hit.normal = quads[i].plane.normal.xyz;
-				hit.color = quads[i].plane.color;
+				hit.normal = quads[i].normal.xyz;
+				hit.color = quads[i].color;
 			}
 		}
 	}
 	for (int i=0;i<bobbingSphereCount;i++) {
-		float t = intersectSphere(ray, bobbingSpheres[i].sphere);
+		float t = intersectSphere(ray, bobbingSpheres[i].position);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
 			hit.position = ray.origin + ray.direction * hit.distance;
-			hit.normal = normalize(hit.position - bobbingSpheres[i].sphere.position.xyz);
-			hit.color = bobbingSpheres[i].sphere.color;
+			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
+			hit.color = bobbingSpheres[i].color;
 		}
 	}
 	if (hit.distance > far || hit.distance < near) {
