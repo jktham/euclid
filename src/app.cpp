@@ -37,23 +37,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 			app.renderer.bounces = 1;
 		}
 	}
-	if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
-		app.renderer.loadScene(0);
-	}
-	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-		app.renderer.loadScene(1);
-	}
-	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-		app.renderer.loadScene(2);
-	}
-	if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
-		app.renderer.loadScene(3);
-	}
-	if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
-		app.renderer.loadScene(4);
+	if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9 && action == GLFW_PRESS) {
+		app.renderer.loadScene(key - GLFW_KEY_0);
 	}
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-		app.paused = !app.paused;
+		app.renderer.animation = !app.renderer.animation;
+	}
+	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+		app.renderer.raytracing = !app.renderer.raytracing;
 	}
 }
 

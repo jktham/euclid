@@ -12,8 +12,7 @@ struct Sphere {
 
 struct Quad {
 	vec4 position;
-	vec4 edge1;
-	vec4 edge2;
+	vec4 edges[2];
 	vec4 color;
 	vec4 normal;
 };
@@ -24,6 +23,14 @@ struct BobbingSphere {
 	vec4 parameters;
 	vec4 color;
 	vec4 position;
+};
+
+
+struct Cube {
+	vec4 position;
+	vec4 edges[3];
+	vec4 color;
+	vec4 normals[3];
 };
 
 struct Ray {
@@ -50,13 +57,13 @@ layout (location = 0) uniform mat4 view;
 layout (location = 1) uniform mat4 inverseView;
 layout (location = 2) uniform float fov;
 layout (location = 3) uniform ivec2 windowSize;
-layout (location = 4) uniform int planeCount;
-layout (location = 5) uniform int sphereCount;
-layout (location = 6) uniform int quadCount;
-layout (location = 7) uniform int bobbingSphereCount;
-layout (location = 8) uniform int bounces;
-layout (location = 9) uniform float time;
-layout (location = 10) uniform bool paused;
+layout (location = 4) uniform float time;
+layout (location = 5) uniform int bounces;
+layout (location = 6) uniform int planeCount;
+layout (location = 7) uniform int sphereCount;
+layout (location = 8) uniform int quadCount;
+layout (location = 9) uniform int bobbingSphereCount;
+layout (location = 10) uniform int cubeCount;
 
 layout (binding = 0, std140) uniform Planes {
 	Plane planes[MAX_OBJECTS];
@@ -72,6 +79,10 @@ layout (binding = 2, std140) uniform Quads {
 
 layout (binding = 3, std140) uniform BobbingSpheres {
 	BobbingSphere bobbingSpheres[MAX_OBJECTS];
+};
+
+layout (binding = 4, std140) uniform Cubes {
+	Cube cubes[MAX_OBJECTS];
 };
 
 float intersectPlane(Ray ray, vec4 planeNormal) {
@@ -123,8 +134,8 @@ RayHit trace(Ray ray) {
 		if (t < hit.distance && t > near) {
 			vec3 pos = ray.origin + ray.direction * t;
 			vec3 offset = pos - quads[i].position.xyz; 
-			vec3 e1 = quads[i].edge1.xyz;
-			vec3 e2 = quads[i].edge2.xyz;
+			vec3 e1 = quads[i].edges[0].xyz;
+			vec3 e2 = quads[i].edges[1].xyz;
 			vec3 n = quads[i].normal.xyz;
 			float v1 = dot(cross(e1, offset), n);
 			float v2 = dot(cross(offset, e2), n);
@@ -145,6 +156,48 @@ RayHit trace(Ray ray) {
 			hit.position = ray.origin + ray.direction * hit.distance;
 			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
 			hit.color = bobbingSpheres[i].color;
+		}
+	}
+	for (int i=0;i<cubeCount;i++) {
+		for (int j=0;j<3;j++) {
+			float t = intersectPlane(ray, cubes[i].normals[j]);
+			if (t < hit.distance && t > near) {
+				vec3 pos = ray.origin + ray.direction * t;
+				vec3 offset = pos - cubes[i].position.xyz; 
+				vec3 e1 = cubes[i].edges[j].xyz;
+				vec3 e2 = cubes[i].edges[(j+1)%3].xyz;
+				vec3 n = cubes[i].normals[j].xyz;
+				float v1 = dot(cross(e1, offset), n);
+				float v2 = dot(cross(offset, e2), n);
+				float v3 = dot(cross(e1, e2 - offset), n);
+				float v4 = dot(cross(e1 - offset, e2), n);
+				if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0 && dot(ray.direction, n) < 0.0) {
+					hit.distance = t;
+					hit.position = ray.origin + ray.direction * hit.distance;
+					hit.normal = cubes[i].normals[j].xyz;
+					hit.color = cubes[i].color;
+				}
+			}
+		}
+		for (int j=0;j<3;j++) {
+			float t = intersectPlane(ray, vec4(cubes[i].normals[j].xyz, cubes[i].normals[j].w + dot(cubes[i].normals[j], cubes[i].edges[(j+2)%3])));
+			if (t < hit.distance && t > near) {
+				vec3 pos = ray.origin + ray.direction * t;
+				vec3 offset = pos - cubes[i].position.xyz; 
+				vec3 e1 = cubes[i].edges[j].xyz;
+				vec3 e2 = cubes[i].edges[(j+1)%3].xyz;
+				vec3 n = cubes[i].normals[j].xyz;
+				float v1 = dot(cross(e1, offset), n);
+				float v2 = dot(cross(offset, e2), n);
+				float v3 = dot(cross(e1, e2 - offset), n);
+				float v4 = dot(cross(e1 - offset, e2), n);
+				if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0 && dot(ray.direction, n) > 0.0) {
+					hit.distance = t;
+					hit.position = ray.origin + ray.direction * hit.distance;
+					hit.normal = cubes[i].normals[j].xyz;
+					hit.color = cubes[i].color;
+				}
+			}
 		}
 	}
 	if (hit.distance > far || hit.distance < near) {

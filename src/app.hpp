@@ -14,7 +14,6 @@ public:
 
 	float time;
 	float deltaTime;
-	bool paused = false;
 
 	bool firstInput = true;
 	glm::ivec2 cursorPos = glm::ivec2(0);

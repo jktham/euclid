@@ -30,12 +30,8 @@ void Renderer::init() {
 }
 
 void Renderer::update() {
-	if (!app.paused) {
+	if (animation) {
 		time += app.deltaTime;
-	}
-	for (int i=0;i<quads.size();i++) {
-		quads[i].normal = glm::vec4(glm::normalize(glm::cross(glm::vec3(quads[i].edge1), glm::vec3(quads[i].edge2))), 0.0f);
-		quads[i].normal.w = glm::dot(glm::vec3(quads[i].position), glm::vec3(quads[i].normal));
 	}
 	for (int i=0;i<bobbingSpheres.size();i++) {
 		float factor = bobbingSpheres[i].parameters.x + 0.5f*(bobbingSpheres[i].parameters.y - bobbingSpheres[i].parameters.x)*(1.0f + sin(bobbingSpheres[i].parameters.z*time + bobbingSpheres[i].parameters.w));
@@ -52,13 +48,17 @@ void Renderer::draw() {
 	glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(glm::inverse(app.camera.view)));
 	glUniform1f(2, app.camera.fov);
 	glUniform2i(3, app.width, app.height);
-	glUniform1i(4, planes.size());
-	glUniform1i(5, spheres.size());
-	glUniform1i(6, quads.size());
-	glUniform1i(7, bobbingSpheres.size());
-	glUniform1i(8, bounces);
-	glUniform1f(9, app.time);
-	glUniform1i(10, app.paused);
+	glUniform1f(4, time);
+	if (raytracing) {
+		glUniform1i(5, bounces);
+	} else {
+		glUniform1i(5, 1);
+	}
+	glUniform1i(6, planes.size());
+	glUniform1i(7, spheres.size());
+	glUniform1i(8, quads.size());
+	glUniform1i(9, bobbingSpheres.size());
+	glUniform1i(10, cubes.size());
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 2);
 
@@ -75,6 +75,7 @@ void Renderer::loadScene(int id) {
 	spheres.clear();
 	quads.clear();
 	bobbingSpheres.clear();
+	cubes.clear();
 
 	if (id == 1) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
@@ -82,22 +83,25 @@ void Renderer::loadScene(int id) {
 		glm::vec3 colors1[] = {glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.9f), glm::vec3(0.9f, 0.9f, 0.3f)};
 		glm::vec3 colors2[] = {glm::vec3(0.9f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.3f), glm::vec3(0.3f, 0.3f, 0.9f)};
 		int n = 16;
+		float pi = 3.1415926f;
 		for (int i=0;i<n;i++) {
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*3.1415f/(float)n, colors1[i%4], i/4 * 0.333f));
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*3.1415f/(float)n, colors2[i%4], i/4 * 0.333f));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n, colors1[i%4], i/4 * 0.333f));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n, colors2[i%4], i/4 * 0.333f));
 		}
 	} else if (id == 2) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
 		int n = 30;
+			float pi = 3.1415926f;
 		for (int i=0;i<n;i++) {
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f)), rnd(2.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*3.1415f), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
+			bobbingSpheres.push_back(BobbingSphere(glm::vec3(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f)), rnd(2.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*pi), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
 		}
 	} else if (id == 3) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
 		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, -30.0f), 20.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 		int n = 30;
+			float pi = 3.1415926f;
 		for (int i=0;i<30;i++) {
-			float phi = i * 2.0f*3.1415f/(float)n;
+			float phi = i * 2.0f*pi/(float)n;
 			bobbingSpheres.push_back(BobbingSphere(glm::vec3(cos(phi)*n, 0.0f, -30.0f + sin(phi)*n), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, 10.0f, 1.0f, phi*3.0f, glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
 		}
 	} else if (id == 4) {
@@ -105,9 +109,35 @@ void Renderer::loadScene(int id) {
 		quads.push_back(Quad(glm::vec3( 35.0f, -20.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
 		int n = 36;
 		for (int i=0;i<n;i++) {
-			float phi = i * 2.0f*3.1415f/(float)n;
+			float pi = 3.1415926f;
+			float phi = i * 2.0f*pi/(float)n;
 			bobbingSpheres.push_back(BobbingSphere(glm::vec3(((n-1)/2.0f-i)*2.0f, 0.0f, -20.0f), 1.0f, glm::vec3(0.0f, cos(phi), sin(phi)), -10.0f, 10.0f, 1.0f, 24.0f*phi, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 		}
+	} else if (id == 5) {
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
+		int n = 3;
+		float w = 10.0f;
+		for (int i=0;i<n;i++) {
+			for (int j=0;j<n-i;j++) {
+				cubes.push_back(Cube(glm::vec3(i*w, (i+j)*w - 15.0f, -j*w - 10.0f), glm::vec3(w, 0.0f, 0.0f), glm::vec3(0.0f, w, 0.0f), glm::vec3(0.0f, 0.0f, -w), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 0.9f));
+			}
+		}
+		spheres.push_back(Sphere(glm::vec3( 5.0f,  0.0f, -15.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		spheres.push_back(Sphere(glm::vec3(15.0f, 10.0f, -15.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		spheres.push_back(Sphere(glm::vec3( 5.0f, 10.0f, -25.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+	} else if (id == 6) {
+		int n = 6;
+		float pi = 3.1415926f;
+		float r = 20.0f;
+		float s = 2.0f*r*sin(pi/(float)n);
+		float h = s;
+		for (int i=0;i<n;i++) {
+			float phi = i * 2.0f*pi/(float)n;
+			quads.push_back(Quad(glm::vec3(cos(phi)*r, -h/2.0f, sin(phi)*r), glm::vec3(0.0f, h, 0.0f), glm::vec3(cos(phi+pi/2.0f+pi/(float)n)*s, 0.0f, sin(phi+pi/2.0f+pi/(float)n)*s), glm::vec3(0.9f, 0.9f, 0.9f), 1.0f));
+		}
+		quads.push_back(Quad(glm::vec3(-r, -h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		quads.push_back(Quad(glm::vec3(-r, h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, 0.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 	}
 
 	updateBuffers();
@@ -137,6 +167,10 @@ void Renderer::generateBuffers() {
 	glGenBuffers(1, &uboBobbingSpheres);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 3, uboBobbingSpheres);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glGenBuffers(1, &uboCubes);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboCubes);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void Renderer::updateBuffers() {
@@ -159,6 +193,10 @@ void Renderer::updateBuffers() {
 
 	glBindBuffer(GL_UNIFORM_BUFFER, uboBobbingSpheres);
 	glBufferData(GL_UNIFORM_BUFFER, bobbingSpheres.size() * sizeof(BobbingSphere), &bobbingSpheres.front(), GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, uboCubes);
+	glBufferData(GL_UNIFORM_BUFFER, cubes.size() * sizeof(Cube), &cubes.front(), GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
