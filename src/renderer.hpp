@@ -24,6 +24,32 @@ struct Sphere {
 	}
 };
 
+struct Quad {
+	Plane plane = Plane(glm::vec4(0.0f), glm::vec4(0.0f));
+	glm::vec4 position = glm::vec4(0.0f);
+	glm::vec4 edge1 = glm::vec4(0.0f);
+	glm::vec4 edge2 = glm::vec4(0.0f);
+	
+	Quad(Plane plane, glm::vec4 position, glm::vec4 edge1, glm::vec4 edge2) {
+		this->plane = plane;
+		this->position = position;
+		this->edge1 = edge1;
+		this->edge2 = edge2;
+	}
+};
+
+struct BobbingSphere {
+	Sphere sphere = Sphere(glm::vec4(0.0f), glm::vec4(0.0f));
+	glm::vec4 direction = glm::vec4(0.0f);
+	glm::vec4 parameters = glm::vec4(0.0f);
+	
+	BobbingSphere(Sphere sphere, glm::vec4 direction, glm::vec4 parameters) {
+		this->sphere = sphere;
+		this->direction = direction;
+		this->parameters = parameters;
+	}
+};
+
 class Renderer {
 public:
 	unsigned int shader;
@@ -31,12 +57,16 @@ public:
 	unsigned int vbo;
 	unsigned int uboPlanes;
 	unsigned int uboSpheres;
+	unsigned int uboQuads;
+	unsigned int uboBobbingSpheres;
 
 	std::vector<float> vertices;
 	std::vector<Plane> planes;
 	std::vector<Sphere> spheres;
+	std::vector<Quad> quads;
+	std::vector<BobbingSphere> bobbingSpheres;
 
-	int bounces = 10;
+	int bounces = 20;
 
 	void init();
 	void update();
