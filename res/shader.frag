@@ -8,13 +8,7 @@ struct Plane {
 struct Sphere {
 	vec4 position;
 	vec4 color;
-};
-
-struct Quad {
-	vec4 position;
-	vec4 edges[2];
-	vec4 color;
-	vec4 normal;
+	vec4 bounds[2];
 };
 
 struct BobbingSphere {
@@ -23,6 +17,15 @@ struct BobbingSphere {
 	vec4 parameters;
 	vec4 color;
 	vec4 position;
+	vec4 bounds[2];
+};
+
+struct Quad {
+	vec4 position;
+	vec4 edges[2];
+	vec4 color;
+	vec4 normal;
+	vec4 bounds[2];
 };
 
 
@@ -31,11 +34,13 @@ struct Cube {
 	vec4 edges[3];
 	vec4 color;
 	vec4 normals[3];
+	vec4 bounds[2];
 };
 
 struct Ray {
 	vec3 origin;
 	vec3 direction;
+	vec3 inv;
 };
 
 struct RayHit {
@@ -49,9 +54,9 @@ float far = 10000.0;
 float near = 0.001;
 const int MAX_OBJECTS = 100;
 
-in vec2 uvPos;
+layout (location = 0) in vec2 uvPos;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 
 layout (location = 0) uniform mat4 view;
 layout (location = 1) uniform mat4 inverseView;
@@ -59,29 +64,17 @@ layout (location = 2) uniform float fov;
 layout (location = 3) uniform ivec2 windowSize;
 layout (location = 4) uniform float time;
 layout (location = 5) uniform int bounces;
-layout (location = 6) uniform int planeCount;
-layout (location = 7) uniform int sphereCount;
-layout (location = 8) uniform int quadCount;
-layout (location = 9) uniform int bobbingSphereCount;
-layout (location = 10) uniform int cubeCount;
+layout (location = 6) uniform int numPlanes;
+layout (location = 7) uniform int numSpheres;
+layout (location = 8) uniform int numBobbingSpheres;
+layout (location = 9) uniform int numQuads;
+layout (location = 10) uniform int numCubes;
 
-layout (binding = 0, std140) uniform Planes {
+layout (binding = 0, std140) uniform Objects {
 	Plane planes[MAX_OBJECTS];
-};
-
-layout (binding = 1, std140) uniform Spheres {
 	Sphere spheres[MAX_OBJECTS];
-};
-
-layout (binding = 2, std140) uniform Quads {
-	Quad quads[MAX_OBJECTS];
-};
-
-layout (binding = 3, std140) uniform BobbingSpheres {
 	BobbingSphere bobbingSpheres[MAX_OBJECTS];
-};
-
-layout (binding = 4, std140) uniform Cubes {
+	Quad quads[MAX_OBJECTS];
 	Cube cubes[MAX_OBJECTS];
 };
 
@@ -108,10 +101,30 @@ float intersectSphere(Ray ray, vec4 spherePosition) {
 	return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);
 }
 
+bool intersectAABB(Ray ray, vec4 bounds[2]) {
+	float tx0 = (bounds[0].x - ray.origin.x)*ray.inv.x;
+	float tx1 = (bounds[1].x - ray.origin.x)*ray.inv.x;
+	float tmin = min(tx0, tx1);
+	float tmax = max(tx0, tx1);
+
+	float ty0 = (bounds[0].y - ray.origin.y)*ray.inv.y;
+	float ty1 = (bounds[1].y - ray.origin.y)*ray.inv.y;
+	tmin = max(tmin, min(ty0, ty1));
+	tmax = min(tmax, max(ty0, ty1));
+	
+	float tz0 = (bounds[0].z - ray.origin.z)*ray.inv.z;
+	float tz1 = (bounds[1].z - ray.origin.z)*ray.inv.z;
+	tmin = max(tmin, min(tz0, tz1));
+	tmax = min(tmax, max(tz0, tz1));
+
+	return tmax >= tmin;
+}
+
 RayHit trace(Ray ray) {
 	RayHit hit;
 	hit.distance = far + 1.0;
-	for (int i=0;i<planeCount;i++) {
+	
+	for (int i=0;i<numPlanes;i++) {
 		float t = intersectPlane(ray, planes[i].normal);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
@@ -120,7 +133,10 @@ RayHit trace(Ray ray) {
 			hit.color = planes[i].color;
 		}
 	}
-	for (int i=0;i<sphereCount;i++) {
+	for (int i=0;i<numSpheres;i++) {
+		if (!intersectAABB(ray, spheres[i].bounds)) {
+			continue;
+		}
 		float t = intersectSphere(ray, spheres[i].position);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
@@ -129,7 +145,22 @@ RayHit trace(Ray ray) {
 			hit.color = spheres[i].color;
 		}
 	}
-	for (int i=0;i<quadCount;i++) {
+	for (int i=0;i<numBobbingSpheres;i++) {
+		if (!intersectAABB(ray, bobbingSpheres[i].bounds)) {
+			continue;
+		}
+		float t = intersectSphere(ray, bobbingSpheres[i].position);
+		if (t < hit.distance && t > near) {
+			hit.distance = t;
+			hit.position = ray.origin + ray.direction * hit.distance;
+			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
+			hit.color = bobbingSpheres[i].color;
+		}
+	}
+	for (int i=0;i<numQuads;i++) {
+		if (!intersectAABB(ray, quads[i].bounds)) {
+			continue;
+		}
 		float t = intersectPlane(ray, quads[i].normal);
 		if (t < hit.distance && t > near) {
 			vec3 pos = ray.origin + ray.direction * t;
@@ -149,16 +180,10 @@ RayHit trace(Ray ray) {
 			}
 		}
 	}
-	for (int i=0;i<bobbingSphereCount;i++) {
-		float t = intersectSphere(ray, bobbingSpheres[i].position);
-		if (t < hit.distance && t > near) {
-			hit.distance = t;
-			hit.position = ray.origin + ray.direction * hit.distance;
-			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
-			hit.color = bobbingSpheres[i].color;
+	for (int i=0;i<numCubes;i++) {
+		if (!intersectAABB(ray, cubes[i].bounds)) {
+			continue;
 		}
-	}
-	for (int i=0;i<cubeCount;i++) {
 		for (int j=0;j<3;j++) {
 			float t = intersectPlane(ray, cubes[i].normals[j]);
 			if (t < hit.distance && t > near) {
@@ -171,7 +196,7 @@ RayHit trace(Ray ray) {
 				float v2 = dot(cross(offset, e2), n);
 				float v3 = dot(cross(e1, e2 - offset), n);
 				float v4 = dot(cross(e1 - offset, e2), n);
-				if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0 && dot(ray.direction, n) < 0.0) {
+				if (v1 < 0.0 && v2 < 0.0 && v3 < 0.0 && v4 < 0.0 && dot(ray.direction, n) < 0.0) {
 					hit.distance = t;
 					hit.position = ray.origin + ray.direction * hit.distance;
 					hit.normal = cubes[i].normals[j].xyz;
@@ -191,7 +216,7 @@ RayHit trace(Ray ray) {
 				float v2 = dot(cross(offset, e2), n);
 				float v3 = dot(cross(e1, e2 - offset), n);
 				float v4 = dot(cross(e1 - offset, e2), n);
-				if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0 && dot(ray.direction, n) > 0.0) {
+				if (v1 < 0.0 && v2 < 0.0 && v3 < 0.0 && v4 < 0.0 && dot(ray.direction, -n) < 0.0) {
 					hit.distance = t;
 					hit.position = ray.origin + ray.direction * hit.distance;
 					hit.normal = cubes[i].normals[j].xyz;
@@ -223,10 +248,12 @@ vec4 render() {
 	for (int i=0;i<bounces;i++) {
 		lastHit = i;
 		if (i == 0) {
-			rays[0] = Ray(cameraPos, normalize(cameraDir + rayOffset * fov / 180.0 * 3.1415));
+			vec3 rayDir = normalize(cameraDir + rayOffset * fov / 180.0 * 3.1415);
+			rays[0] = Ray(cameraPos, rayDir, vec3(1.0/rayDir.x, 1.0/rayDir.y, 1.0/rayDir.z));
 			hits[0] = trace(rays[0]);
 		} else {
-			rays[i] = Ray(hits[i-1].position, reflect(rays[i-1].direction, hits[i-1].normal));
+			vec3 rayDir = reflect(rays[i-1].direction, hits[i-1].normal);
+			rays[i] = Ray(hits[i-1].position, rayDir, vec3(1.0/rayDir.x, 1.0/rayDir.y, 1.0/rayDir.z));
 			hits[i] = trace(rays[i]);
 		}
 		if (hits[i].distance > far || hits[i].distance < near) {

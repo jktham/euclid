@@ -34,8 +34,7 @@ void Renderer::update() {
 		time += app.deltaTime;
 	}
 	for (int i=0;i<bobbingSpheres.size();i++) {
-		float factor = bobbingSpheres[i].parameters.x + 0.5f*(bobbingSpheres[i].parameters.y - bobbingSpheres[i].parameters.x)*(1.0f + sin(bobbingSpheres[i].parameters.z*time + bobbingSpheres[i].parameters.w));
-		bobbingSpheres[i].position = bobbingSpheres[i].origin + glm::vec4(glm::vec3(bobbingSpheres[i].direction * factor), 0.0f);
+		bobbingSpheres[i].update(time);
 	}
 	updateBuffers();
 }
@@ -56,8 +55,8 @@ void Renderer::draw() {
 	}
 	glUniform1i(6, planes.size());
 	glUniform1i(7, spheres.size());
-	glUniform1i(8, quads.size());
-	glUniform1i(9, bobbingSpheres.size());
+	glUniform1i(8, bobbingSpheres.size());
+	glUniform1i(9, quads.size());
 	glUniform1i(10, cubes.size());
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 2);
@@ -115,16 +114,18 @@ void Renderer::loadScene(int id) {
 		}
 	} else if (id == 5) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
-		int n = 3;
+		int n = 4;
 		float w = 10.0f;
 		for (int i=0;i<n;i++) {
 			for (int j=0;j<n-i;j++) {
-				cubes.push_back(Cube(glm::vec3(i*w, (i+j)*w - 15.0f, -j*w - 10.0f), glm::vec3(w, 0.0f, 0.0f), glm::vec3(0.0f, w, 0.0f), glm::vec3(0.0f, 0.0f, -w), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 0.9f));
+				cubes.push_back(Cube(glm::vec3(i*w, (i+j)*w - 15.0f, -j*w - 10.0f), glm::vec3(w, 0.0f, 0.0f), glm::vec3(0.0f, w, 0.0f), glm::vec3(0.0f, 0.0f, w), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 0.9f));
 			}
 		}
-		spheres.push_back(Sphere(glm::vec3( 5.0f,  0.0f, -15.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		spheres.push_back(Sphere(glm::vec3(15.0f, 10.0f, -15.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		spheres.push_back(Sphere(glm::vec3( 5.0f, 10.0f, -25.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		for (int i=0;i<n-1;i++) {
+			for (int j=0;j<n-i-1;j++) {
+				spheres.push_back(Sphere(glm::vec3(i*w + 5.0f, (i+j)*w, -j*w - 5.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+			}
+		}
 	} else if (id == 6) {
 		int n = 6;
 		float pi = 3.1415926f;
@@ -133,11 +134,13 @@ void Renderer::loadScene(int id) {
 		float h = s;
 		for (int i=0;i<n;i++) {
 			float phi = i * 2.0f*pi/(float)n;
-			quads.push_back(Quad(glm::vec3(cos(phi)*r, -h/2.0f, sin(phi)*r), glm::vec3(0.0f, h, 0.0f), glm::vec3(cos(phi+pi/2.0f+pi/(float)n)*s, 0.0f, sin(phi+pi/2.0f+pi/(float)n)*s), glm::vec3(0.9f, 0.9f, 0.9f), 1.0f));
+			quads.push_back(Quad(glm::vec3(cos(phi)*r, -h/2.0f, sin(phi)*r), glm::vec3(0.0f, h, 0.0f), glm::vec3(cos(phi+pi/2.0f+pi/(float)n)*s, 0.0f, sin(phi+pi/2.0f+pi/(float)n)*s), glm::vec3(0.8f, 0.8f, 0.8f), 1.0f));
 		}
 		quads.push_back(Quad(glm::vec3(-r, -h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		quads.push_back(Quad(glm::vec3(-r, h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+		quads.push_back(Quad(glm::vec3(-r,  h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
 		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, 0.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
+	} else if (id == 7) {
+		bobbingSpheres.push_back(BobbingSphere());
 	}
 
 	updateBuffers();
@@ -152,24 +155,8 @@ void Renderer::generateBuffers() {
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
-	glGenBuffers(1, &uboPlanes);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboPlanes);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	
-	glGenBuffers(1, &uboSpheres);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboSpheres);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glGenBuffers(1, &uboQuads);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 2, uboQuads);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glGenBuffers(1, &uboBobbingSpheres);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 3, uboBobbingSpheres);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glGenBuffers(1, &uboCubes);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboCubes);
+	glGenBuffers(1, &uboObjects);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboObjects);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -179,24 +166,20 @@ void Renderer::updateBuffers() {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices.front(), GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, uboPlanes);
-	glBufferData(GL_UNIFORM_BUFFER, planes.size() * sizeof(Plane), &planes.front(), GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(BobbingSphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube);
+	int offsetPlanes = 0;
+	int offsetSpheres = offsetPlanes + MAX_OBJECTS*sizeof(Plane);
+	int offsetBobbingSpheres = offsetSpheres + MAX_OBJECTS*sizeof(Sphere);
+	int offsetQuads = offsetBobbingSpheres + MAX_OBJECTS*sizeof(BobbingSphere);
+	int offsetCubes = offsetQuads + MAX_OBJECTS*sizeof(Quad);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, uboSpheres);
-	glBufferData(GL_UNIFORM_BUFFER, spheres.size() * sizeof(Sphere), &spheres.front(), GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, uboQuads);
-	glBufferData(GL_UNIFORM_BUFFER, quads.size() * sizeof(Quad), &quads.front(), GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, uboBobbingSpheres);
-	glBufferData(GL_UNIFORM_BUFFER, bobbingSpheres.size() * sizeof(BobbingSphere), &bobbingSpheres.front(), GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, uboCubes);
-	glBufferData(GL_UNIFORM_BUFFER, cubes.size() * sizeof(Cube), &cubes.front(), GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboObjects);
+	glBufferData(GL_UNIFORM_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetPlanes, planes.size()*sizeof(Plane), &planes.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetSpheres, spheres.size()*sizeof(Sphere), &spheres.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetBobbingSpheres, bobbingSpheres.size()*sizeof(BobbingSphere), &bobbingSpheres.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetQuads, quads.size()*sizeof(Quad), &quads.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetCubes, cubes.size()*sizeof(Cube), &cubes.front());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
