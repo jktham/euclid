@@ -3,12 +3,14 @@
 struct Plane {
 	vec4 normal;
 	vec4 color;
+	vec4 material;
 };
 
 struct Sphere {
 	vec4 position;
 	vec4 color;
 	vec4 bounds[2];
+	vec4 material;
 };
 
 struct BobbingSphere {
@@ -18,6 +20,7 @@ struct BobbingSphere {
 	vec4 color;
 	vec4 position;
 	vec4 bounds[2];
+	vec4 material;
 };
 
 struct Quad {
@@ -26,6 +29,7 @@ struct Quad {
 	vec4 color;
 	vec4 normal;
 	vec4 bounds[2];
+	vec4 material;
 };
 
 
@@ -35,12 +39,19 @@ struct Cube {
 	vec4 color;
 	vec4 normals[3];
 	vec4 bounds[2];
+	vec4 material;
+};
+
+struct Light {
+	vec4 position;
+	vec4 color;
+	vec4 material;
 };
 
 struct Ray {
 	vec3 origin;
 	vec3 direction;
-	vec3 inv;
+	vec3 inverseDirection;
 };
 
 struct RayHit {
@@ -48,10 +59,13 @@ struct RayHit {
 	float distance;
 	vec3 normal;
 	vec4 color;
+	vec4 material;
+	bool final;
 };
 
 float far = 10000.0;
 float near = 0.001;
+const float PI = 3.1415926;
 const int MAX_OBJECTS = 100;
 
 layout (location = 0) in vec2 uvPos;
@@ -64,11 +78,15 @@ layout (location = 2) uniform float fov;
 layout (location = 3) uniform ivec2 windowSize;
 layout (location = 4) uniform float time;
 layout (location = 5) uniform int bounces;
-layout (location = 6) uniform int numPlanes;
-layout (location = 7) uniform int numSpheres;
-layout (location = 8) uniform int numBobbingSpheres;
-layout (location = 9) uniform int numQuads;
-layout (location = 10) uniform int numCubes;
+layout (location = 6) uniform bool reflections;
+layout (location = 7) uniform bool lighting;
+layout (location = 8) uniform vec4 skyColor;
+layout (location = 9) uniform int numPlanes;
+layout (location = 10) uniform int numSpheres;
+layout (location = 11) uniform int numBobbingSpheres;
+layout (location = 12) uniform int numQuads;
+layout (location = 13) uniform int numCubes;
+layout (location = 14) uniform int numLights;
 
 layout (binding = 0, std140) uniform Objects {
 	Plane planes[MAX_OBJECTS];
@@ -76,6 +94,7 @@ layout (binding = 0, std140) uniform Objects {
 	BobbingSphere bobbingSpheres[MAX_OBJECTS];
 	Quad quads[MAX_OBJECTS];
 	Cube cubes[MAX_OBJECTS];
+	Light lights[MAX_OBJECTS];
 };
 
 float intersectPlane(Ray ray, vec4 planeNormal) {
@@ -102,18 +121,18 @@ float intersectSphere(Ray ray, vec4 spherePosition) {
 }
 
 bool intersectAABB(Ray ray, vec4 bounds[2]) {
-	float tx0 = (bounds[0].x - ray.origin.x)*ray.inv.x;
-	float tx1 = (bounds[1].x - ray.origin.x)*ray.inv.x;
+	float tx0 = (bounds[0].x - ray.origin.x)*ray.inverseDirection.x;
+	float tx1 = (bounds[1].x - ray.origin.x)*ray.inverseDirection.x;
 	float tmin = min(tx0, tx1);
 	float tmax = max(tx0, tx1);
 
-	float ty0 = (bounds[0].y - ray.origin.y)*ray.inv.y;
-	float ty1 = (bounds[1].y - ray.origin.y)*ray.inv.y;
+	float ty0 = (bounds[0].y - ray.origin.y)*ray.inverseDirection.y;
+	float ty1 = (bounds[1].y - ray.origin.y)*ray.inverseDirection.y;
 	tmin = max(tmin, min(ty0, ty1));
 	tmax = min(tmax, max(ty0, ty1));
 	
-	float tz0 = (bounds[0].z - ray.origin.z)*ray.inv.z;
-	float tz1 = (bounds[1].z - ray.origin.z)*ray.inv.z;
+	float tz0 = (bounds[0].z - ray.origin.z)*ray.inverseDirection.z;
+	float tz1 = (bounds[1].z - ray.origin.z)*ray.inverseDirection.z;
 	tmin = max(tmin, min(tz0, tz1));
 	tmax = min(tmax, max(tz0, tz1));
 
@@ -130,7 +149,12 @@ RayHit trace(Ray ray) {
 			hit.distance = t;
 			hit.position = ray.origin + ray.direction * hit.distance;
 			hit.normal = planes[i].normal.xyz;
+			if (dot(ray.direction, hit.normal) > 0.0) {
+				hit.normal = -hit.normal;
+			}
 			hit.color = planes[i].color;
+			hit.material = planes[i].material;
+			hit.final = false;
 		}
 	}
 	for (int i=0;i<numSpheres;i++) {
@@ -143,6 +167,8 @@ RayHit trace(Ray ray) {
 			hit.position = ray.origin + ray.direction * hit.distance;
 			hit.normal = normalize(hit.position - spheres[i].position.xyz);
 			hit.color = spheres[i].color;
+			hit.material = spheres[i].material;
+			hit.final = false;
 		}
 	}
 	for (int i=0;i<numBobbingSpheres;i++) {
@@ -155,6 +181,8 @@ RayHit trace(Ray ray) {
 			hit.position = ray.origin + ray.direction * hit.distance;
 			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
 			hit.color = bobbingSpheres[i].color;
+			hit.material = bobbingSpheres[i].material;
+			hit.final = false;
 		}
 	}
 	for (int i=0;i<numQuads;i++) {
@@ -176,7 +204,12 @@ RayHit trace(Ray ray) {
 				hit.distance = t;
 				hit.position = ray.origin + ray.direction * hit.distance;
 				hit.normal = quads[i].normal.xyz;
+				if (dot(ray.direction, hit.normal) > 0.0) {
+					hit.normal = -hit.normal;
+				}
 				hit.color = quads[i].color;
+				hit.material = quads[i].material;
+				hit.final = false;
 			}
 		}
 	}
@@ -201,6 +234,8 @@ RayHit trace(Ray ray) {
 					hit.position = ray.origin + ray.direction * hit.distance;
 					hit.normal = cubes[i].normals[j].xyz;
 					hit.color = cubes[i].color;
+					hit.material = cubes[i].material;
+					hit.final = false;
 				}
 			}
 		}
@@ -219,17 +254,34 @@ RayHit trace(Ray ray) {
 				if (v1 < 0.0 && v2 < 0.0 && v3 < 0.0 && v4 < 0.0 && dot(ray.direction, -n) < 0.0) {
 					hit.distance = t;
 					hit.position = ray.origin + ray.direction * hit.distance;
-					hit.normal = cubes[i].normals[j].xyz;
+					hit.normal = -cubes[i].normals[j].xyz;
 					hit.color = cubes[i].color;
+					hit.material = cubes[i].material;
+					hit.final = false;
 				}
 			}
+		}
+	}
+
+	for (int i=0;i<numLights;i++) {
+		vec3 pos = lights[i].position.xyz - ray.origin;
+		if (hit.distance > length(pos) && dot(ray.direction, normalize(pos)) > 0.9999) {
+			hit.distance = length(pos);
+			hit.position = ray.origin + ray.direction * length(pos);
+			hit.normal = -normalize(pos);
+			hit.color = vec4(lights[i].color.rgb, 1.0f);
+			hit.material = vec4(0.0, 0.0, 0.0, 0.0);
+			hit.final = true;
 		}
 	}
 	if (hit.distance > far || hit.distance < near) {
 		hit.distance = far + 1.0;
 		hit.position = ray.origin + ray.direction * hit.distance;
 		hit.normal = -ray.direction;
-		hit.color = vec4(1.0, 1.0, 1.0, 1.0) * (-hit.normal.y + 1.0) / 2.0;
+		float skyAngle = (-hit.normal.y + 1.0) / 2.0;
+		hit.color = vec4(mix(skyColor.rgb*skyColor.a, skyColor.rgb, skyAngle), 1.0);
+		hit.material = vec4(0.0, 0.0, 0.0, 0.0);
+		hit.final = true;
 	}
 	return hit;
 }
@@ -245,25 +297,57 @@ vec4 render() {
 	int lastHit;
 	Ray rays[100];
 	RayHit hits[100];
-	for (int i=0;i<bounces;i++) {
-		lastHit = i;
-		if (i == 0) {
-			vec3 rayDir = normalize(cameraDir + rayOffset * fov / 180.0 * 3.1415);
-			rays[0] = Ray(cameraPos, rayDir, vec3(1.0/rayDir.x, 1.0/rayDir.y, 1.0/rayDir.z));
-			hits[0] = trace(rays[0]);
-		} else {
-			vec3 rayDir = reflect(rays[i-1].direction, hits[i-1].normal);
+
+	vec3 rayDir = normalize(cameraDir + rayOffset * fov / 180.0 * PI);
+	rays[0] = Ray(cameraPos, rayDir, vec3(1.0/rayDir.x, 1.0/rayDir.y, 1.0/rayDir.z));
+	hits[0] = trace(rays[0]);
+
+	if (reflections && !hits[0].final) {
+		for (int i=1;i<bounces;i++) {
+			lastHit = i;
+			rayDir = reflect(rays[i-1].direction, hits[i-1].normal);
 			rays[i] = Ray(hits[i-1].position, rayDir, vec3(1.0/rayDir.x, 1.0/rayDir.y, 1.0/rayDir.z));
 			hits[i] = trace(rays[i]);
+			if (hits[i].final) {
+				break;
+			}
 		}
-		if (hits[i].distance > far || hits[i].distance < near) {
-			break;
+	}
+	
+	if (lighting && numLights > 0) {
+		vec3 prevPos = cameraPos;
+		for (int i=0;i<=lastHit;i++) {
+			if (hits[i].final) {
+				continue;
+			}
+			vec3 sum;
+			for (int j=0;j<numLights;j++) {
+				vec3 lightDir = normalize(lights[j].position.xyz - hits[i].position);
+				vec3 viewDir = normalize(prevPos - hits[i].position);
+				vec3 reflectDir = reflect(-lightDir, hits[i].normal);
+				vec3 halfwayDir = normalize(lightDir + viewDir);
+
+				float diffuseFactor = max(dot(hits[i].normal, lightDir), 0.0);
+				// float specularFactor = max(dot(viewDir, reflectDir), 0.0) * max(sign(diffuseFactor), 0.0);
+				float specularFactor = max(dot(hits[i].normal, halfwayDir), 0.0) * max(sign(diffuseFactor), 0.0);
+
+				vec3 ambient = lights[j].color.rgb * hits[i].material.x * lights[j].material.x;
+				vec3 diffuse = lights[j].color.rgb * diffuseFactor * hits[i].material.y * lights[j].material.y;
+				vec3 specular = lights[j].color.rgb * pow(specularFactor, hits[i].material.w * lights[j].material.w * 2.0) * hits[i].material.z * lights[j].material.z;
+				vec3 phong = (ambient + diffuse + specular) * hits[i].color.rgb;
+
+				sum += phong;
+			}
+			hits[i].color = vec4(mix(hits[i].color.rgb, sum, hits[i].color.a), hits[i].color.a);
+			prevPos = hits[i].position;
 		}
 	}
 
 	vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+
 	for (int i=lastHit;i>=0;i--) {
-		color = mix(vec4(hits[i].color.xyz, 1.0), color * vec4(hits[i].color.xyz, 1.0), hits[i].color.w);
+		color = color * hits[i].color;
+		color = vec4(mix(color.rgb, hits[i].color.rgb, hits[i].color.a), 1.0);
 	}
 
 	return color;

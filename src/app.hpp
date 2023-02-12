@@ -1,6 +1,7 @@
 #pragma once
 
 #include "camera.hpp"
+#include "scene.hpp"
 #include "renderer.hpp"
 
 #include <GLFW/glfw3.h>
@@ -20,8 +21,9 @@ public:
 	glm::ivec2 cursorOffset = glm::ivec2(0);
 
 	Camera camera;
+	Scene scene;
 	Renderer renderer;
-	
+
 	void init();
 	void loop();
 	void exit();

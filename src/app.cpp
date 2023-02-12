@@ -1,6 +1,7 @@
 #include "app.hpp"
 
 #include "camera.hpp"
+#include "scene.hpp"
 #include "renderer.hpp"
 
 #include <glm/glm.hpp>
@@ -38,13 +39,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		}
 	}
 	if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9 && action == GLFW_PRESS) {
-		app.renderer.loadScene(key - GLFW_KEY_0);
+		app.scene.load(key - GLFW_KEY_0);
+		app.renderer.updateBuffers();
 	}
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
 		app.renderer.animation = !app.renderer.animation;
 	}
-	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-		app.renderer.raytracing = !app.renderer.raytracing;
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+		app.renderer.reflections = !app.renderer.reflections;
+	}
+	if (key == GLFW_KEY_E && action == GLFW_PRESS) {
+		app.renderer.lighting = !app.renderer.lighting;
 	}
 }
 
@@ -132,6 +137,7 @@ void App::init() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	camera.init();
+	scene.init();
 	renderer.init();
 }
 
@@ -144,8 +150,12 @@ void App::loop() {
 		time = glfwGetTime();
 		
 		std::cout << std::fixed << std::setprecision(4);
-		std::cout << time << ", " << deltaTime << ", " << 1.0f / deltaTime;
-		std::cout << ", " << glm::to_string(camera.position);
+		std::cout << "time: " << time << ", delta: " << deltaTime << ", fps: " << 1.0f / deltaTime;
+		std::cout << ", pos: (" << camera.position.x << ", " << camera.position.y << ", " << camera.position.z << ")";
+		std::cout << ", bounces: " << renderer.bounces;
+		std::cout << ", animation: " << renderer.animation;
+		std::cout << ", reflections: " << renderer.reflections;
+		std::cout << ", lighting: " << renderer.lighting;
 		std::cout << std::endl;
 
 		camera.update();

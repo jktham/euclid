@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include "app.hpp"
+#include "scene.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,16 +27,14 @@ void Renderer::init() {
 		-1.0f,  1.0f,
 	};
 
-	loadScene(1);
+	updateBuffers();
 }
 
 void Renderer::update() {
 	if (animation) {
 		time += app.deltaTime;
 	}
-	for (int i=0;i<bobbingSpheres.size();i++) {
-		bobbingSpheres[i].update(time);
-	}
+	app.scene.update(time);
 	updateBuffers();
 }
 
@@ -48,102 +47,21 @@ void Renderer::draw() {
 	glUniform1f(2, app.camera.fov);
 	glUniform2i(3, app.width, app.height);
 	glUniform1f(4, time);
-	if (raytracing) {
-		glUniform1i(5, bounces);
-	} else {
-		glUniform1i(5, 1);
-	}
-	glUniform1i(6, planes.size());
-	glUniform1i(7, spheres.size());
-	glUniform1i(8, bobbingSpheres.size());
-	glUniform1i(9, quads.size());
-	glUniform1i(10, cubes.size());
+	glUniform1i(5, bounces);
+	glUniform1i(6, reflections);
+	glUniform1i(7, lighting);
+	glUniform4fv(8, 1, glm::value_ptr(app.scene.skyColor));
+	glUniform1i(9, app.scene.planes.size());
+	glUniform1i(10, app.scene.spheres.size());
+	glUniform1i(11, app.scene.bobbingSpheres.size());
+	glUniform1i(12, app.scene.quads.size());
+	glUniform1i(13, app.scene.cubes.size());
+	glUniform1i(14, app.scene.lights.size());
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 2);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-}
-
-float Renderer::rnd(float min, float max) {
-	return min + (float)std::rand() / ((float)RAND_MAX/(max-min));
-}
-
-void Renderer::loadScene(int id) {
-	planes.clear();
-	spheres.clear();
-	quads.clear();
-	bobbingSpheres.clear();
-	cubes.clear();
-
-	if (id == 1) {
-		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
-		quads.push_back(Quad(glm::vec3(0.0f, -30.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 20.0f, -50.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
-		glm::vec3 colors1[] = {glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.9f), glm::vec3(0.9f, 0.9f, 0.3f)};
-		glm::vec3 colors2[] = {glm::vec3(0.9f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.3f), glm::vec3(0.3f, 0.3f, 0.9f)};
-		int n = 16;
-		float pi = 3.1415926f;
-		for (int i=0;i<n;i++) {
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n, colors1[i%4], i/4 * 0.333f));
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n, colors2[i%4], i/4 * 0.333f));
-		}
-	} else if (id == 2) {
-		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
-		int n = 30;
-			float pi = 3.1415926f;
-		for (int i=0;i<n;i++) {
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f)), rnd(2.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*pi), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
-		}
-	} else if (id == 3) {
-		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
-		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, -30.0f), 20.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		int n = 30;
-			float pi = 3.1415926f;
-		for (int i=0;i<30;i++) {
-			float phi = i * 2.0f*pi/(float)n;
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(cos(phi)*n, 0.0f, -30.0f + sin(phi)*n), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, 10.0f, 1.0f, phi*3.0f, glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 1.0f));
-		}
-	} else if (id == 4) {
-		quads.push_back(Quad(glm::vec3(-35.0f, -20.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
-		quads.push_back(Quad(glm::vec3( 35.0f, -20.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 0.0f, -40.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.9f));
-		int n = 36;
-		for (int i=0;i<n;i++) {
-			float pi = 3.1415926f;
-			float phi = i * 2.0f*pi/(float)n;
-			bobbingSpheres.push_back(BobbingSphere(glm::vec3(((n-1)/2.0f-i)*2.0f, 0.0f, -20.0f), 1.0f, glm::vec3(0.0f, cos(phi), sin(phi)), -10.0f, 10.0f, 1.0f, 24.0f*phi, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		}
-	} else if (id == 5) {
-		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec3(0.5f, 0.5f, 0.5f), 0.8f));
-		int n = 4;
-		float w = 10.0f;
-		for (int i=0;i<n;i++) {
-			for (int j=0;j<n-i;j++) {
-				cubes.push_back(Cube(glm::vec3(i*w, (i+j)*w - 15.0f, -j*w - 10.0f), glm::vec3(w, 0.0f, 0.0f), glm::vec3(0.0f, w, 0.0f), glm::vec3(0.0f, 0.0f, w), glm::vec3(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), 0.9f));
-			}
-		}
-		for (int i=0;i<n-1;i++) {
-			for (int j=0;j<n-i-1;j++) {
-				spheres.push_back(Sphere(glm::vec3(i*w + 5.0f, (i+j)*w, -j*w - 5.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-			}
-		}
-	} else if (id == 6) {
-		int n = 6;
-		float pi = 3.1415926f;
-		float r = 20.0f;
-		float s = 2.0f*r*sin(pi/(float)n);
-		float h = s;
-		for (int i=0;i<n;i++) {
-			float phi = i * 2.0f*pi/(float)n;
-			quads.push_back(Quad(glm::vec3(cos(phi)*r, -h/2.0f, sin(phi)*r), glm::vec3(0.0f, h, 0.0f), glm::vec3(cos(phi+pi/2.0f+pi/(float)n)*s, 0.0f, sin(phi+pi/2.0f+pi/(float)n)*s), glm::vec3(0.8f, 0.8f, 0.8f), 1.0f));
-		}
-		quads.push_back(Quad(glm::vec3(-r, -h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		quads.push_back(Quad(glm::vec3(-r,  h/2.0f, r), glm::vec3(2.0f*r, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -2.0f*r), glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, 0.0f), 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f));
-	} else if (id == 7) {
-		bobbingSpheres.push_back(BobbingSphere());
-	}
-
-	updateBuffers();
 }
 
 void Renderer::generateBuffers() {
@@ -166,20 +84,22 @@ void Renderer::updateBuffers() {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices.front(), GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
-	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(BobbingSphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube);
+	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(BobbingSphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube)+MAX_OBJECTS*sizeof(Light);
 	int offsetPlanes = 0;
 	int offsetSpheres = offsetPlanes + MAX_OBJECTS*sizeof(Plane);
 	int offsetBobbingSpheres = offsetSpheres + MAX_OBJECTS*sizeof(Sphere);
 	int offsetQuads = offsetBobbingSpheres + MAX_OBJECTS*sizeof(BobbingSphere);
 	int offsetCubes = offsetQuads + MAX_OBJECTS*sizeof(Quad);
+	int offsetLights = offsetCubes + MAX_OBJECTS*sizeof(Cube);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, uboObjects);
 	glBufferData(GL_UNIFORM_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetPlanes, planes.size()*sizeof(Plane), &planes.front());
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetSpheres, spheres.size()*sizeof(Sphere), &spheres.front());
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetBobbingSpheres, bobbingSpheres.size()*sizeof(BobbingSphere), &bobbingSpheres.front());
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetQuads, quads.size()*sizeof(Quad), &quads.front());
-	glBufferSubData(GL_UNIFORM_BUFFER, offsetCubes, cubes.size()*sizeof(Cube), &cubes.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetPlanes, app.scene.planes.size()*sizeof(Plane), &app.scene.planes.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetSpheres, app.scene.spheres.size()*sizeof(Sphere), &app.scene.spheres.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetBobbingSpheres, app.scene.bobbingSpheres.size()*sizeof(BobbingSphere), &app.scene.bobbingSpheres.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetQuads, app.scene.quads.size()*sizeof(Quad), &app.scene.quads.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetCubes, app.scene.cubes.size()*sizeof(Cube), &app.scene.cubes.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetLights, app.scene.lights.size()*sizeof(Light), &app.scene.lights.front());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
