@@ -9,27 +9,17 @@ struct Plane {
 struct Sphere {
 	vec4 position;
 	vec4 color;
-	vec4 bounds[2];
 	vec4 material;
-};
-
-struct BobbingSphere {
-	vec4 origin;
-	vec4 direction;
-	vec4 parameters;
-	vec4 color;
-	vec4 position;
 	vec4 bounds[2];
-	vec4 material;
 };
 
 struct Quad {
 	vec4 position;
 	vec4 edges[2];
 	vec4 color;
+	vec4 material;
 	vec4 normal;
 	vec4 bounds[2];
-	vec4 material;
 };
 
 
@@ -37,9 +27,9 @@ struct Cube {
 	vec4 position;
 	vec4 edges[3];
 	vec4 color;
+	vec4 material;
 	vec4 normals[3];
 	vec4 bounds[2];
-	vec4 material;
 };
 
 struct Light {
@@ -83,15 +73,13 @@ layout (location = 7) uniform bool lighting;
 layout (location = 8) uniform vec4 skyColor;
 layout (location = 9) uniform int numPlanes;
 layout (location = 10) uniform int numSpheres;
-layout (location = 11) uniform int numBobbingSpheres;
-layout (location = 12) uniform int numQuads;
-layout (location = 13) uniform int numCubes;
-layout (location = 14) uniform int numLights;
+layout (location = 11) uniform int numQuads;
+layout (location = 12) uniform int numCubes;
+layout (location = 13) uniform int numLights;
 
 layout (binding = 0, std140) uniform Objects {
 	Plane planes[MAX_OBJECTS];
 	Sphere spheres[MAX_OBJECTS];
-	BobbingSphere bobbingSpheres[MAX_OBJECTS];
 	Quad quads[MAX_OBJECTS];
 	Cube cubes[MAX_OBJECTS];
 	Light lights[MAX_OBJECTS];
@@ -168,20 +156,6 @@ RayHit trace(Ray ray) {
 			hit.normal = normalize(hit.position - spheres[i].position.xyz);
 			hit.color = spheres[i].color;
 			hit.material = spheres[i].material;
-			hit.final = false;
-		}
-	}
-	for (int i=0;i<numBobbingSpheres;i++) {
-		if (!intersectAABB(ray, bobbingSpheres[i].bounds)) {
-			continue;
-		}
-		float t = intersectSphere(ray, bobbingSpheres[i].position);
-		if (t < hit.distance && t > near) {
-			hit.distance = t;
-			hit.position = ray.origin + ray.direction * hit.distance;
-			hit.normal = normalize(hit.position - bobbingSpheres[i].position.xyz);
-			hit.color = bobbingSpheres[i].color;
-			hit.material = bobbingSpheres[i].material;
 			hit.final = false;
 		}
 	}
@@ -320,7 +294,7 @@ vec4 render() {
 			if (hits[i].final) {
 				continue;
 			}
-			vec3 sum;
+			vec3 sum = vec3(0.0, 0.0, 0.0);
 			for (int j=0;j<numLights;j++) {
 				vec3 lightDir = normalize(lights[j].position.xyz - hits[i].position);
 				vec3 viewDir = normalize(prevPos - hits[i].position);
