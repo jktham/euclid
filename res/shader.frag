@@ -70,12 +70,13 @@ layout (location = 4) uniform float time;
 layout (location = 5) uniform int bounces;
 layout (location = 6) uniform bool reflections;
 layout (location = 7) uniform bool lighting;
-layout (location = 8) uniform vec4 skyColor;
-layout (location = 9) uniform int numPlanes;
-layout (location = 10) uniform int numSpheres;
-layout (location = 11) uniform int numQuads;
-layout (location = 12) uniform int numCubes;
-layout (location = 13) uniform int numLights;
+layout (location = 8) uniform bool shadows;
+layout (location = 9) uniform vec4 skyColor;
+layout (location = 10) uniform int numPlanes;
+layout (location = 11) uniform int numSpheres;
+layout (location = 12) uniform int numQuads;
+layout (location = 13) uniform int numCubes;
+layout (location = 14) uniform int numLights;
 
 layout (binding = 0, std140) uniform Objects {
 	Plane planes[MAX_OBJECTS];
@@ -146,9 +147,9 @@ RayHit trace(Ray ray) {
 		}
 	}
 	for (int i=0;i<numSpheres;i++) {
-		if (!intersectAABB(ray, spheres[i].bounds)) {
-			continue;
-		}
+		// if (!intersectAABB(ray, spheres[i].bounds)) {
+		// 	continue;
+		// }
 		float t = intersectSphere(ray, spheres[i].position);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
@@ -304,6 +305,15 @@ vec4 render() {
 				float diffuseFactor = max(dot(hits[i].normal, lightDir), 0.0);
 				// float specularFactor = max(dot(viewDir, reflectDir), 0.0) * max(sign(diffuseFactor), 0.0);
 				float specularFactor = max(dot(hits[i].normal, halfwayDir), 0.0) * max(sign(diffuseFactor), 0.0);
+
+				if (shadows && diffuseFactor + specularFactor > 0.0) {
+					Ray shadowRay = Ray(hits[i].position, lightDir, vec3(1.0/lightDir.x, 1.0/lightDir.y, 1.0/lightDir.z));
+					RayHit shadowHit = trace(shadowRay);
+					if (shadowHit.distance < length(lights[j].position.xyz - hits[i].position)) {
+						diffuseFactor = 0.0;
+						specularFactor = 0.0;
+					}
+				}
 
 				vec3 ambient = lights[j].color.rgb * hits[i].material.x * lights[j].material.x;
 				vec3 diffuse = lights[j].color.rgb * diffuseFactor * hits[i].material.y * lights[j].material.y;

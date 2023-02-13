@@ -50,12 +50,13 @@ void Renderer::draw() {
 	glUniform1i(5, bounces);
 	glUniform1i(6, reflections);
 	glUniform1i(7, lighting);
-	glUniform4fv(8, 1, glm::value_ptr(app.scene.skyColor));
-	glUniform1i(9, app.scene.planes.size());
-	glUniform1i(10, app.scene.spheres.size());
-	glUniform1i(11, app.scene.quads.size());
-	glUniform1i(12, app.scene.cubes.size());
-	glUniform1i(13, app.scene.lights.size());
+	glUniform1i(8, shadows);
+	glUniform4fv(9, 1, glm::value_ptr(app.scene.skyColor));
+	glUniform1i(10, app.scene.planes.size());
+	glUniform1i(11, app.scene.spheres.size());
+	glUniform1i(12, app.scene.quads.size());
+	glUniform1i(13, app.scene.cubes.size());
+	glUniform1i(14, app.scene.lights.size());
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 2);
 

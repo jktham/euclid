@@ -42,14 +42,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		app.scene.load(key - GLFW_KEY_0);
 		app.renderer.updateBuffers();
 	}
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
 		app.renderer.animation = !app.renderer.animation;
 	}
-	if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_X && action == GLFW_PRESS) {
 		app.renderer.reflections = !app.renderer.reflections;
 	}
-	if (key == GLFW_KEY_E && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_C && action == GLFW_PRESS) {
 		app.renderer.lighting = !app.renderer.lighting;
+	}
+	if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+		app.renderer.shadows = !app.renderer.shadows;
 	}
 }
 
@@ -156,6 +159,7 @@ void App::loop() {
 		std::cout << ", animation: " << renderer.animation;
 		std::cout << ", reflections: " << renderer.reflections;
 		std::cout << ", lighting: " << renderer.lighting;
+		std::cout << ", shadows: " << renderer.shadows;
 		std::cout << std::endl;
 
 		camera.update();

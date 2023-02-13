@@ -101,25 +101,26 @@ void Scene::load(int id) {
 	} else if (id == 7) {
 		skyColor = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
 		lights.push_back(Light(glm::vec3(0.0f, 100.0f, 50.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec4(0.4f, 0.4f, 0.4f, 0.6f), glm::vec4(0.5f, 0.5f, 0.5f, 32.0f)));
-		quads.push_back(Quad(glm::vec3(0.0f, -30.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 20.0f, -50.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.1f), glm::vec4(0.5f, 0.5f, 0.5f, 32.0f)));
+		updaters.push_back(new BobUpdater(&lights.back().position, glm::vec3(1.0f, 0.0f, 0.0f), -100.0f, 100.0f, 1.0f, 0.0f));
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec4(0.4f, 0.4f, 0.4f, 0.6f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
+		quads.push_back(Quad(glm::vec3(0.0f, -30.0f, 0.0f), glm::vec3(0.0f, 40.0f, 0.0f), glm::vec3(0.0f, 20.0f, -50.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.1f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 		glm::vec3 colors1[] = {glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.9f), glm::vec3(0.9f, 0.9f, 0.3f)};
 		glm::vec3 colors2[] = {glm::vec3(0.9f, 0.9f, 0.9f), glm::vec3(0.9f, 0.3f, 0.3f), glm::vec3(0.3f, 0.9f, 0.3f), glm::vec3(0.3f, 0.3f, 0.9f)};
 		int n = 16;
 		float pi = 3.1415926f;
 		for (int i=0;i<n;i++) {
-			spheres.push_back(Sphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec4(colors1[i%4], 1.0f - i/4 * 0.333f), glm::vec4(0.5f, 0.5f, 0.5f, 32.0f)));
+			spheres.push_back(Sphere(glm::vec3( 10.0f*(i%4) + 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec4(colors1[i%4], 1.0f - i/4 * 0.333f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 			updaters.push_back(new BobUpdater(&spheres.back().position, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n));
-			spheres.push_back(Sphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec4(colors2[i%4], 1.0f - i/4 * 0.333f), glm::vec4(0.5f, 0.5f, 0.5f, 32.0f)));
+			spheres.push_back(Sphere(glm::vec3(-10.0f*(i%4) - 10.0f, 0.0f, 10.0f*(i/4) - 40.0f), 3.0f, glm::vec4(colors2[i%4], 1.0f - i/4 * 0.333f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 			updaters.push_back(new BobUpdater(&spheres.back().position, glm::vec3(0.0f, 1.0f, 0.0f), -6.0f, 6.0f, 1.0f, i*2.0f*pi/(float)n));
 		}
 
 	} else if (id == 8) {
-		skyColor = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-		lights.push_back(Light(glm::vec3(0.0f, 50.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-		updaters.push_back(new CircleUpdater(&lights.back().position, glm::vec3(0.0f, 1.0f, 0.0f), 80.0f, 1.0f, 0.0f));
+		skyColor = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
+		lights.push_back(Light(glm::vec3(0.0f, 80.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+		updaters.push_back(new CircleUpdater(&lights.back().position, glm::vec3(0.0f, 1.0f, 0.0f), 100.0f, 1.0f, 0.0f));
 		spheres.push_back(Sphere(glm::vec3(0.0f, 80.0f, 0.0f), 10.0f, glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f))));
-		quads.push_back(Quad(glm::vec3(-200.0f, -40.0f, -200.0f), glm::vec3(400.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 400.0f), glm::vec4(0.3f, 0.3f, 0.3f, 0.6f), glm::vec4(0.5f, 0.5f, 0.5f, 32.0f)));
+		quads.push_back(Quad(glm::vec3(-200.0f, -40.0f, -200.0f), glm::vec3(400.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 400.0f), glm::vec4(0.3f, 0.3f, 0.3f, 0.6f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 		int n = 5;
 		for (int i=0;i<n;i++) {
 			for (int j=0;j<n;j++) {

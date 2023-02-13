@@ -21,6 +21,7 @@ public:
 	bool animation = true;
 	bool reflections = true;
 	bool lighting = true;
+	bool shadows = true;
 
 	void init();
 	void update();

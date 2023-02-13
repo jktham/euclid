@@ -4,12 +4,12 @@
 
 class Camera {
 public:
-	float fov = 90.0f;
-	float speed = 10.0f;
-	float sensitivity = 0.1f;
+	double fov = 90.0f;
+	double speed = 10.0f;
+	double sensitivity = 0.1f;
 	
-	float pitch = 0.0f;
-	float yaw = -90.0f;
+	double pitch = 0.0f;
+	double yaw = -90.0f;
 
 	glm::vec3 position = glm::vec3(0.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);

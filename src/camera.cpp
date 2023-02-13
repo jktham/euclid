@@ -14,17 +14,17 @@ void Camera::update() {
 	pitch -= (app.cursorOffset.y) * sensitivity;
 	yaw += (app.cursorOffset.x) * sensitivity;
 
-	if (pitch > 89.0f) {
-		pitch = 89.0f;
+	if (pitch > 89.0) {
+		pitch = 89.0;
 	}
-	if (pitch < -89.0f) {
-		pitch = -89.0f;
+	if (pitch < -89.0) {
+		pitch = -89.0;
 	}
-	if (yaw > 360.0f) {
-		yaw -= 360.0f;
+	if (yaw > 360.0) {
+		yaw -= 360.0;
 	}
-	if (yaw < 0.0f) {
-		yaw += 360.0f;
+	if (yaw < 0.0) {
+		yaw += 360.0;
 	}
 
 	glm::vec3 direction;
