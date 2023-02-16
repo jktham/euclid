@@ -22,8 +22,16 @@ struct Quad {
 	vec4 bounds[2];
 };
 
-
 struct Cube {
+	vec4 position;
+	vec4 edges[3];
+	vec4 color;
+	vec4 material;
+	vec4 normals[3];
+	vec4 bounds[2];
+};
+
+struct Volume {
 	vec4 position;
 	vec4 edges[3];
 	vec4 color;
@@ -50,13 +58,14 @@ struct RayHit {
 	vec3 normal;
 	vec4 color;
 	vec4 material;
+	vec4 tint;
 	bool final;
 };
 
 float far = 10000.0;
 float near = 0.001;
 const float PI = 3.1415926;
-const int MAX_OBJECTS = 100;
+const int MAX_OBJECTS = 60;
 
 layout (location = 0) in vec2 uvPos;
 
@@ -76,38 +85,17 @@ layout (location = 10) uniform int numPlanes;
 layout (location = 11) uniform int numSpheres;
 layout (location = 12) uniform int numQuads;
 layout (location = 13) uniform int numCubes;
-layout (location = 14) uniform int numLights;
+layout (location = 14) uniform int numVolumes;
+layout (location = 15) uniform int numLights;
 
 layout (binding = 0, std140) uniform Objects {
 	Plane planes[MAX_OBJECTS];
 	Sphere spheres[MAX_OBJECTS];
 	Quad quads[MAX_OBJECTS];
 	Cube cubes[MAX_OBJECTS];
+	Volume volumes[MAX_OBJECTS];
 	Light lights[MAX_OBJECTS];
 };
-
-float intersectPlane(Ray ray, vec4 planeNormal) {
-	float a = dot(ray.direction, planeNormal.xyz);
-	if (abs(a) < 0.001) {
-		return -1.0;
-	}
-	vec3 n = planeNormal.xyz;
-	vec3 p0 = planeNormal.xyz * planeNormal.w;
-	vec3 l = ray.direction;
-	vec3 l0 = ray.origin;
-	return dot((p0-l0), n) / dot(l, n);
-}
-
-float intersectSphere(Ray ray, vec4 spherePosition) {
-	float a = dot(ray.direction, ray.direction);
-	vec3 offset = ray.origin - spherePosition.xyz;
-	float b = 2.0 * dot(ray.direction, offset);
-	float c = dot(offset, offset) - (spherePosition.w*spherePosition.w);
-	if (b*b - 4.0*a*c < 0.0) {
-		return -1.0;
-	}
-	return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);
-}
 
 bool intersectAABB(Ray ray, vec4 bounds[2]) {
 	float tx0 = (bounds[0].x - ray.origin.x)*ray.inverseDirection.x;
@@ -128,9 +116,52 @@ bool intersectAABB(Ray ray, vec4 bounds[2]) {
 	return tmax >= tmin;
 }
 
+float intersectPlane(Ray ray, vec4 normal) {
+	float a = dot(ray.direction, normal.xyz);
+	if (abs(a) < 0.001) {
+		return -1.0;
+	}
+	vec3 n = normal.xyz;
+	vec3 p0 = normal.xyz * normal.w;
+	vec3 l = ray.direction;
+	vec3 l0 = ray.origin;
+	return dot((p0-l0), n) / dot(l, n);
+}
+
+float intersectSphere(Ray ray, vec4 position) {
+	float a = dot(ray.direction, ray.direction);
+	vec3 offset = ray.origin - position.xyz;
+	float b = 2.0 * dot(ray.direction, offset);
+	float c = dot(offset, offset) - (position.w*position.w);
+	if (b*b - 4.0*a*c < 0.0) {
+		return -1.0;
+	}
+	return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);
+}
+
+float intersectQuad(Ray ray, vec4 position, vec4 edges[2], vec4 normal) {
+	float t = intersectPlane(ray, normal);
+	vec3 pos = ray.origin + ray.direction * t;
+	vec3 offset = pos - position.xyz; 
+	vec3 e1 = edges[0].xyz;
+	vec3 e2 = edges[1].xyz;
+	vec3 n = normal.xyz;
+
+	float v1 = dot(cross(e1, offset), n);
+	float v2 = dot(cross(offset, e2), n);
+	float v3 = dot(cross(e1, e2 - offset), n);
+	float v4 = dot(cross(e1 - offset, e2), n);
+
+	if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0) {
+		return t;
+	}
+	return -1.0;
+}
+
 RayHit trace(Ray ray) {
 	RayHit hit;
 	hit.distance = far + 1.0;
+	hit.tint = vec4(0.0, 0.0, 0.0, 0.0);
 	
 	for (int i=0;i<numPlanes;i++) {
 		float t = intersectPlane(ray, planes[i].normal);
@@ -146,10 +177,8 @@ RayHit trace(Ray ray) {
 			hit.final = false;
 		}
 	}
+
 	for (int i=0;i<numSpheres;i++) {
-		// if (!intersectAABB(ray, spheres[i].bounds)) {
-		// 	continue;
-		// }
 		float t = intersectSphere(ray, spheres[i].position);
 		if (t < hit.distance && t > near) {
 			hit.distance = t;
@@ -160,80 +189,55 @@ RayHit trace(Ray ray) {
 			hit.final = false;
 		}
 	}
+
 	for (int i=0;i<numQuads;i++) {
 		if (!intersectAABB(ray, quads[i].bounds)) {
 			continue;
 		}
-		float t = intersectPlane(ray, quads[i].normal);
+		float t = intersectQuad(ray, quads[i].position, quads[i].edges, quads[i].normal);
 		if (t < hit.distance && t > near) {
-			vec3 pos = ray.origin + ray.direction * t;
-			vec3 offset = pos - quads[i].position.xyz; 
-			vec3 e1 = quads[i].edges[0].xyz;
-			vec3 e2 = quads[i].edges[1].xyz;
-			vec3 n = quads[i].normal.xyz;
-			float v1 = dot(cross(e1, offset), n);
-			float v2 = dot(cross(offset, e2), n);
-			float v3 = dot(cross(e1, e2 - offset), n);
-			float v4 = dot(cross(e1 - offset, e2), n);
-			if (v1 > 0.0 && v2 > 0.0 && v3 > 0.0 && v4 > 0.0) {
-				hit.distance = t;
-				hit.position = ray.origin + ray.direction * hit.distance;
-				hit.normal = quads[i].normal.xyz;
-				if (dot(ray.direction, hit.normal) > 0.0) {
-					hit.normal = -hit.normal;
-				}
-				hit.color = quads[i].color;
-				hit.material = quads[i].material;
-				hit.final = false;
+			hit.distance = t;
+			hit.position = ray.origin + ray.direction * hit.distance;
+			hit.normal = quads[i].normal.xyz;
+			if (dot(ray.direction, hit.normal) > 0.0) {
+				hit.normal = -hit.normal;
 			}
+			hit.color = quads[i].color;
+			hit.material = quads[i].material;
+			hit.final = false;
 		}
 	}
+
 	for (int i=0;i<numCubes;i++) {
 		if (!intersectAABB(ray, cubes[i].bounds)) {
 			continue;
 		}
 		for (int j=0;j<3;j++) {
-			float t = intersectPlane(ray, cubes[i].normals[j]);
+			float t = intersectQuad(ray, cubes[i].position, vec4[](cubes[i].edges[j], cubes[i].edges[(j+1)%3]), cubes[i].normals[j]);
 			if (t < hit.distance && t > near) {
-				vec3 pos = ray.origin + ray.direction * t;
-				vec3 offset = pos - cubes[i].position.xyz; 
-				vec3 e1 = cubes[i].edges[j].xyz;
-				vec3 e2 = cubes[i].edges[(j+1)%3].xyz;
-				vec3 n = cubes[i].normals[j].xyz;
-				float v1 = dot(cross(e1, offset), n);
-				float v2 = dot(cross(offset, e2), n);
-				float v3 = dot(cross(e1, e2 - offset), n);
-				float v4 = dot(cross(e1 - offset, e2), n);
-				if (v1 < 0.0 && v2 < 0.0 && v3 < 0.0 && v4 < 0.0 && dot(ray.direction, n) < 0.0) {
-					hit.distance = t;
-					hit.position = ray.origin + ray.direction * hit.distance;
-					hit.normal = cubes[i].normals[j].xyz;
-					hit.color = cubes[i].color;
-					hit.material = cubes[i].material;
-					hit.final = false;
+				if (dot(ray.direction, -cubes[i].normals[j].xyz) > 0.0) {
+					continue;
 				}
+				hit.distance = t;
+				hit.position = ray.origin + ray.direction * hit.distance;
+				hit.normal = -cubes[i].normals[j].xyz;
+				hit.color = cubes[i].color;
+				hit.material = cubes[i].material;
+				hit.final = false;
 			}
 		}
 		for (int j=0;j<3;j++) {
-			float t = intersectPlane(ray, vec4(cubes[i].normals[j].xyz, cubes[i].normals[j].w + dot(cubes[i].normals[j], cubes[i].edges[(j+2)%3])));
+			float t = intersectQuad(ray, cubes[i].position + cubes[i].edges[(j+2)%3], vec4[](cubes[i].edges[j], cubes[i].edges[(j+1)%3]), vec4(cubes[i].normals[j].xyz, cubes[i].normals[j].w + dot(cubes[i].normals[j].xyz, cubes[i].edges[(j+2)%3].xyz)));
 			if (t < hit.distance && t > near) {
-				vec3 pos = ray.origin + ray.direction * t;
-				vec3 offset = pos - cubes[i].position.xyz; 
-				vec3 e1 = cubes[i].edges[j].xyz;
-				vec3 e2 = cubes[i].edges[(j+1)%3].xyz;
-				vec3 n = cubes[i].normals[j].xyz;
-				float v1 = dot(cross(e1, offset), n);
-				float v2 = dot(cross(offset, e2), n);
-				float v3 = dot(cross(e1, e2 - offset), n);
-				float v4 = dot(cross(e1 - offset, e2), n);
-				if (v1 < 0.0 && v2 < 0.0 && v3 < 0.0 && v4 < 0.0 && dot(ray.direction, -n) < 0.0) {
-					hit.distance = t;
-					hit.position = ray.origin + ray.direction * hit.distance;
-					hit.normal = -cubes[i].normals[j].xyz;
-					hit.color = cubes[i].color;
-					hit.material = cubes[i].material;
-					hit.final = false;
+				if (dot(ray.direction, cubes[i].normals[j].xyz) > 0.0) {
+					continue;
 				}
+				hit.distance = t;
+				hit.position = ray.origin + ray.direction * hit.distance;
+				hit.normal = cubes[i].normals[j].xyz;
+				hit.color = cubes[i].color;
+				hit.material = cubes[i].material;
+				hit.final = false;
 			}
 		}
 	}
@@ -249,6 +253,36 @@ RayHit trace(Ray ray) {
 			hit.final = true;
 		}
 	}
+
+	for (int i=0;i<numVolumes;i++) {
+		if (!intersectAABB(ray, volumes[i].bounds)) {
+			continue;
+		}
+		float t[6];
+		for (int j=0;j<3;j++) {
+			t[j] = intersectQuad(ray, volumes[i].position, vec4[](volumes[i].edges[j], volumes[i].edges[(j+1)%3]), volumes[i].normals[j]);
+		}
+		for (int j=0;j<3;j++) {
+			t[j+3] = intersectQuad(ray, volumes[i].position + volumes[i].edges[(j+2)%3], vec4[](volumes[i].edges[j], volumes[i].edges[(j+1)%3]), vec4(volumes[i].normals[j].xyz, volumes[i].normals[j].w + dot(volumes[i].normals[j].xyz, volumes[i].edges[(j+2)%3].xyz)));
+		}
+		float s[2];
+		int k = 0;
+		for (int j=0;j<6;j++) {
+			if (t[j] < hit.distance && t[j] > near && k < 2) {
+				s[k] = t[j];
+				k++;
+			}
+		}
+		if (k == 1) {
+			s[1] = 0.0;
+			k++;
+		}
+		if (k == 2) {
+			float d = abs(s[0] - s[1]);
+			hit.tint = vec4(volumes[i].color.rgb, min(d * volumes[i].color.a, 1.0));
+		}
+	}
+
 	if (hit.distance > far || hit.distance < near) {
 		hit.distance = far + 1.0;
 		hit.position = ray.origin + ray.direction * hit.distance;
@@ -258,6 +292,7 @@ RayHit trace(Ray ray) {
 		hit.material = vec4(0.0, 0.0, 0.0, 0.0);
 		hit.final = true;
 	}
+
 	return hit;
 }
 
@@ -332,6 +367,7 @@ vec4 render() {
 	for (int i=lastHit;i>=0;i--) {
 		color = color * hits[i].color;
 		color = vec4(mix(color.rgb, hits[i].color.rgb, hits[i].color.a), 1.0);
+		color = vec4(mix(color.rgb, hits[i].tint.rgb, hits[i].tint.a), 1.0);
 	}
 
 	return color;

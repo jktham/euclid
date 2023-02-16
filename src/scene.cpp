@@ -11,6 +11,7 @@ void Scene::init() {
 	spheres.reserve(100);
 	quads.reserve(100);
 	cubes.reserve(100);
+	volumes.reserve(100);
 	lights.reserve(100);
 	load(1);
 }
@@ -21,6 +22,7 @@ void Scene::load(int id) {
 	spheres.clear();
 	quads.clear();
 	cubes.clear();
+	volumes.clear();
 	lights.clear();
 	updaters.clear();
 
@@ -41,7 +43,7 @@ void Scene::load(int id) {
 	} else if (id == 2) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -10.0f, glm::vec4(0.5f, 0.5f, 0.5f, 0.2f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 		int n = 30;
-			float pi = 3.1415926f;
+		float pi = 3.1415926f;
 		for (int i=0;i<n;i++) {
 			spheres.push_back(Sphere(glm::vec3(rnd(-50.0f, 50.0f), rnd(0.0f, 10.0f), rnd(-10.0f, -110.0f)), rnd(2.0f, 6.0f), glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 0.0f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 			updaters.push_back(new BobUpdater(&spheres.back().position, glm::vec3(0.0f, 1.0f, 0.0f), rnd(-8.0f, -2.0f), rnd(2.0f, 8.0f), rnd(0.5f, 2.0f), rnd(0.0f, 2.0f*pi)));
@@ -51,7 +53,7 @@ void Scene::load(int id) {
 		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec4(0.5f, 0.5f, 0.5f, 0.2f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 		spheres.push_back(Sphere(glm::vec3(0.0f, 0.0f, -30.0f), 20.0f, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 		int n = 30;
-			float pi = 3.1415926f;
+		float pi = 3.1415926f;
 		for (int i=0;i<30;i++) {
 			float phi = i * 2.0f*pi/(float)n;
 			spheres.push_back(Sphere(glm::vec3(cos(phi)*n, 0.0f, -30.0f + sin(phi)*n), 1.0f, glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 0.0f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
@@ -127,6 +129,21 @@ void Scene::load(int id) {
 				cubes.push_back(Cube(glm::vec3(20.0f * i - 40.0f - 5.0f, 0.0f, -20.0f * j + 40.0f - 5.0f), glm::vec3(10.0f, 0.0f, 0.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 0.0f, 10.0f), glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f)), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 			}
 		}
+	} else if (id == 9) {
+		lights.push_back(Light(glm::vec3(0.0f, 80.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+		updaters.push_back(new CircleUpdater(&lights.back().position, glm::vec3(0.0f, 1.0f, 0.0f), 100.0f, 1.0f, 0.0f));
+
+		planes.push_back(Plane(glm::vec3(0.0f, 1.0f, 0.0f), -30.0f, glm::vec4(0.5f, 0.5f, 0.5f, 0.2f)));
+		int n = 30;
+		float pi = 3.1415926f;
+		float r = 30.0f;
+		for (int i=0;i<n;i++) {
+			float phi = i * 2.0f*pi/(float)n;
+			spheres.push_back(Sphere(glm::vec3(cos(phi)*r, 0.0f, sin(phi)*r), 1.0f, glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 0.0f)));
+			updaters.push_back(new BobUpdater(&spheres.back().position, glm::vec3(0.0f, 1.0f, 0.0f), -5.0f, 5.0f, 1.0f, phi*4.0f));
+		}
+		float w = 20.0f;
+		volumes.push_back(Volume(glm::vec3(0.0f - w/2.0f, 0.0f - w, 0.0f - w/2.0f), glm::vec3(w, 0.0f, 0.0f), glm::vec3(0.0f, w*2.0f, 0.0f), glm::vec3(0.0f, 0.0f, w), glm::vec4(rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), rnd(0.0f, 1.0f), 0.03f), glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)));
 	}
 }
 

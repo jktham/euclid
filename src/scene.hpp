@@ -10,6 +10,7 @@ public:
 	std::vector<Sphere> spheres;
 	std::vector<Quad> quads;
 	std::vector<Cube> cubes;
+	std::vector<Volume> volumes;
 	std::vector<Light> lights;
 	std::vector<Updater*> updaters;
 

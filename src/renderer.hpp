@@ -12,7 +12,7 @@ public:
 	unsigned int vao;
 	unsigned int vbo;
 	unsigned int uboObjects;
-	const int MAX_OBJECTS = 100;
+	const int MAX_OBJECTS = 60;
 
 	std::vector<float> vertices;
 

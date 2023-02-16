@@ -98,17 +98,55 @@ struct Cube {
 			this->edges[2] = glm::vec4(edge3, 0.0f);
 			this->color = color;
 			this->material = material;
-			this->normals[0] = -glm::vec4(glm::normalize(glm::cross(edge1, edge2)), glm::dot(position, glm::normalize(glm::cross(edge1, edge2))));
-			this->normals[1] = -glm::vec4(glm::normalize(glm::cross(edge2, edge3)), glm::dot(position, glm::normalize(glm::cross(edge2, edge3))));
-			this->normals[2] = -glm::vec4(glm::normalize(glm::cross(edge3, edge1)), glm::dot(position, glm::normalize(glm::cross(edge3, edge1))));
+			this->normals[0] = glm::vec4(glm::normalize(glm::cross(edge1, edge2)), glm::dot(position, glm::normalize(glm::cross(edge1, edge2))));
+			this->normals[1] = glm::vec4(glm::normalize(glm::cross(edge2, edge3)), glm::dot(position, glm::normalize(glm::cross(edge2, edge3))));
+			this->normals[2] = glm::vec4(glm::normalize(glm::cross(edge3, edge1)), glm::dot(position, glm::normalize(glm::cross(edge3, edge1))));
 			this->bounds[0] = glm::vec4(position, 0.0f);
 			this->bounds[1] = glm::vec4(position + edge1 + edge2 + edge3, 0.0f);
 	}
 
 	void generate() {
-		normals[0] = -glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1])))));
-		normals[1] = -glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2])))));
-		normals[2] = -glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0])))));
+		normals[0] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1])))));
+		normals[1] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2])))));
+		normals[2] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0])))));
+		bounds[0] = position;
+		bounds[1] = position + edges[0] + edges[1] + edges[2];
+	}
+};
+
+struct Volume {
+	glm::vec4 position; // x, y, z, 0
+	glm::vec4 edges[3]; // x, y, z, 0
+	glm::vec4 color; // r, g, b, a
+	glm::vec4 material; // ambient, diffuse, specular, exponent
+
+	glm::vec4 normals[3]; // x, y, z, offset (generated)
+	glm::vec4 bounds[2]; // x, y, z, 0 (generated)
+
+	Volume(
+		glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
+		glm::vec3 edge1 = glm::vec3(1.0f, 0.0f, 0.0f), 
+		glm::vec3 edge2 = glm::vec3(0.0f, 1.0f, 0.0f), 
+		glm::vec3 edge3 = glm::vec3(0.0f, 0.0f, 1.0f), 
+		glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f), 
+		glm::vec4 material = glm::vec4(0.1f, 0.5f, 0.5f, 32.0f)) {
+			this->position = glm::vec4(position, 0.0f);
+			this->edges[0] = glm::vec4(edge1, 0.0f);
+			this->edges[1] = glm::vec4(edge2, 0.0f);
+			this->edges[2] = glm::vec4(edge3, 0.0f);
+			this->color = color;
+			this->material = material;
+			this->normals[0] = glm::vec4(glm::normalize(glm::cross(edge1, edge2)), glm::dot(position, glm::normalize(glm::cross(edge1, edge2))));
+			this->normals[1] = glm::vec4(glm::normalize(glm::cross(edge2, edge3)), glm::dot(position, glm::normalize(glm::cross(edge2, edge3))));
+			this->normals[2] = glm::vec4(glm::normalize(glm::cross(edge3, edge1)), glm::dot(position, glm::normalize(glm::cross(edge3, edge1))));
+			this->bounds[0] = glm::vec4(position, 0.0f);
+			this->bounds[1] = glm::vec4(position + edge1 + edge2 + edge3, 0.0f);
+	}
+
+	void generate() {
+		normals[0] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[0]), glm::vec3(edges[1])))));
+		normals[1] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[1]), glm::vec3(edges[2])))));
+		normals[2] = glm::vec4(glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0]))), glm::dot(glm::vec3(position), glm::normalize(glm::cross(glm::vec3(edges[2]), glm::vec3(edges[0])))));
 		bounds[0] = position;
 		bounds[1] = position + edges[0] + edges[1] + edges[2];
 	}

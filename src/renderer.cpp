@@ -56,7 +56,8 @@ void Renderer::draw() {
 	glUniform1i(11, app.scene.spheres.size());
 	glUniform1i(12, app.scene.quads.size());
 	glUniform1i(13, app.scene.cubes.size());
-	glUniform1i(14, app.scene.lights.size());
+	glUniform1i(14, app.scene.volumes.size());
+	glUniform1i(15, app.scene.lights.size());
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 2);
 
@@ -84,12 +85,13 @@ void Renderer::updateBuffers() {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices.front(), GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
-	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube)+MAX_OBJECTS*sizeof(Light);
+	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube)+MAX_OBJECTS*sizeof(Volume)+MAX_OBJECTS*sizeof(Light);
 	int offsetPlanes = 0;
 	int offsetSpheres = offsetPlanes + MAX_OBJECTS*sizeof(Plane);
 	int offsetQuads = offsetSpheres + MAX_OBJECTS*sizeof(Sphere);
 	int offsetCubes = offsetQuads + MAX_OBJECTS*sizeof(Quad);
-	int offsetLights = offsetCubes + MAX_OBJECTS*sizeof(Cube);
+	int offsetVolumes = offsetCubes + MAX_OBJECTS*sizeof(Cube);
+	int offsetLights = offsetVolumes + MAX_OBJECTS*sizeof(Volume);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, uboObjects);
 	glBufferData(GL_UNIFORM_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
@@ -97,6 +99,7 @@ void Renderer::updateBuffers() {
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetSpheres, app.scene.spheres.size()*sizeof(Sphere), &app.scene.spheres.front());
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetQuads, app.scene.quads.size()*sizeof(Quad), &app.scene.quads.front());
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetCubes, app.scene.cubes.size()*sizeof(Cube), &app.scene.cubes.front());
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetVolumes, app.scene.volumes.size()*sizeof(Volume), &app.scene.volumes.front());
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetLights, app.scene.lights.size()*sizeof(Light), &app.scene.lights.front());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
