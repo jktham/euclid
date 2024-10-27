@@ -82,7 +82,7 @@ void Renderer::generateBuffers() {
 void Renderer::updateBuffers() {
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices.front(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices.front(), GL_DYNAMIC_DRAW);
 	glBindVertexArray(0);
 
 	int bufferSize = MAX_OBJECTS*sizeof(Plane)+MAX_OBJECTS*sizeof(Sphere)+MAX_OBJECTS*sizeof(Quad)+MAX_OBJECTS*sizeof(Cube)+MAX_OBJECTS*sizeof(Volume)+MAX_OBJECTS*sizeof(Light);
@@ -94,7 +94,7 @@ void Renderer::updateBuffers() {
 	int offsetLights = offsetVolumes + MAX_OBJECTS*sizeof(Volume);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, uboObjects);
-	glBufferData(GL_UNIFORM_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, bufferSize, NULL, GL_DYNAMIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetPlanes, app.scene.planes.size()*sizeof(Plane), &app.scene.planes.front());
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetSpheres, app.scene.spheres.size()*sizeof(Sphere), &app.scene.spheres.front());
 	glBufferSubData(GL_UNIFORM_BUFFER, offsetQuads, app.scene.quads.size()*sizeof(Quad), &app.scene.quads.front());

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 project(euclid)
 
 set(CMAKE_CXX_STANDARD 20)
+set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
 
@@ -20,7 +21,11 @@ add_executable(euclid ${SOURCES})
 
 target_include_directories(euclid PRIVATE src ext/inc)
 target_link_directories(euclid PRIVATE ext/lib)
-target_link_libraries(euclid PRIVATE libglfw3.a)
+if(WIN32)
+	target_link_libraries(euclid PRIVATE libglfw3.a)
+elseif(UNIX)
+	target_link_libraries(euclid PRIVATE glfw)
+endif()
 target_link_libraries(euclid PRIVATE OpenGL::GL)
 
 add_compile_definitions(GLFW_INCLUDE_NONE)

@@ -304,7 +304,7 @@ vec4 render() {
 	vec3 cameraDir = vec3(inverseView * vec4(0.0, 0.0, -1.0, 0.0));
 	vec3 rayOffset = vec3(inverseView * vec4(uv, 0.0, 0.0));
 
-	int lastHit;
+	int lastHit = 0;
 	Ray rays[100];
 	RayHit hits[100];
 
